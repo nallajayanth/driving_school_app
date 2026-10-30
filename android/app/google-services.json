@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1096787298947",
+    "project_id": "driving-school-aiots",
+    "storage_bucket": "driving-school-aiots.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1096787298947:android:1de7875c225eb68fbde9b6",
+        "android_client_info": {
+          "package_name": "com.example.driving_school_mobile_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1096787298947-o84vriapv2soord5o0u9q4121a6aj8c2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWi0VaR8pYa56Lh0GDezGgx3bn5HE3Lk0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1096787298947-o84vriapv2soord5o0u9q4121a6aj8c2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
