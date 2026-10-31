@@ -67,10 +67,17 @@ class AuthNotifier extends AsyncNotifier<User?> {
     ref.listen(authStateStreamProvider, (previous, next) {
       if (next.hasValue) {
         state = AsyncData(next.value);
+        if (next.value != null && repo is FirebaseAuthRepository) {
+          ref.read(isDemoModeProvider.notifier).setDemoMode(false);
+        }
       }
     });
 
-    return repo.getCurrentUser();
+    final currentUser = await repo.getCurrentUser();
+    if (currentUser != null && repo is FirebaseAuthRepository) {
+      ref.read(isDemoModeProvider.notifier).setDemoMode(false);
+    }
+    return currentUser;
   }
 
   /// Authenticates using email and password.
@@ -78,6 +85,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
     required String email,
     required String password,
   }) async {
+    ref.read(isDemoModeProvider.notifier).setDemoMode(false);
     final repo = ref.read(authRepositoryProvider);
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -95,6 +103,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
     required String password,
     required String name,
   }) async {
+    ref.read(isDemoModeProvider.notifier).setDemoMode(false);
     final repo = ref.read(authRepositoryProvider);
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -109,6 +118,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
 
   /// Authenticates using Google Sign-In.
   Future<void> signInWithGoogle() async {
+    ref.read(isDemoModeProvider.notifier).setDemoMode(false);
     final repo = ref.read(authRepositoryProvider);
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -154,6 +164,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
 
   /// Terminates the active session.
   Future<void> logout() async {
+    ref.read(isDemoModeProvider.notifier).setDemoMode(false);
     final repo = ref.read(authRepositoryProvider);
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {

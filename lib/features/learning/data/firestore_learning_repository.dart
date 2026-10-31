@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:flutter/foundation.dart';
 import '../domain/driving_class.dart';
 import '../domain/learning_unit.dart';
 import '../domain/question.dart';
@@ -61,6 +63,25 @@ class FirestoreLearningRepository implements LearningRepository {
       return List.unmodifiable(_cachedQuestionsByClass[targetModule]!);
     }
 
+    String projectId = 'unknown';
+    try {
+      projectId = _firestore.app.options.projectId;
+    } catch (_) {}
+
+    String authUserId = 'none';
+    try {
+      final user = firebase_auth.FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        authUserId =
+            'UID(${user.uid.length >= 6 ? user.uid.substring(0, 6) : user.uid}...)';
+      }
+    } catch (_) {}
+
+    debugPrint(
+      '[FirestoreLearningRepository] Project: $projectId | User: $authUserId | '
+      'Querying module $targetModule (language: ${FirestoreQueryStrategy.defaultLanguageCode}, active: true)',
+    );
+
     // Query active questions in English for the target module
     final snapshot = await _firestore
         .collection(FirestoreQueryStrategy.questionsCollection)
@@ -77,6 +98,11 @@ class FirestoreLearningRepository implements LearningRepository {
             .map((doc) => QuestionMapper.fromFirestore(doc.data(), doc.id))
             .toList(growable: true)
           ..sort((a, b) => a.questionNumber.compareTo(b.questionNumber));
+
+    debugPrint(
+      '[FirestoreLearningRepository] Project: $projectId | '
+      'Successfully retrieved ${questions.length} documents for module $targetModule',
+    );
 
     _cachedQuestionsByClass[targetModule] = questions;
 
