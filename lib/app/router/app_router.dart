@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/authentication/presentation/auth_providers.dart';
+import '../../features/authentication/presentation/forgot_password_screen.dart';
+import '../../features/authentication/presentation/login_screen.dart';
+import '../../features/authentication/presentation/register_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/exam_history/domain/exam_attempt.dart';
 import '../../features/exam_history/presentation/exam_history_screen.dart';
+import '../../features/learning/domain/question.dart';
 import '../../features/learning/presentation/learning_screen.dart';
 import '../../features/learning/presentation/question_detail_screen.dart';
 import '../../features/navigation/presentation/main_scaffold_shell.dart';
@@ -25,11 +30,70 @@ final GlobalKey<NavigatorState> _preliminaryNavigatorKey =
 final GlobalKey<NavigatorState> _progressNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'progressNav');
 
+/// Listenable bridge notifying GoRouter whenever the auth state changes.
+class RouterNotifier extends ChangeNotifier {
+  RouterNotifier(this._ref) {
+    _ref.listen(currentUserProvider, (prev, next) => notifyListeners());
+  }
+
+  final Ref _ref;
+}
+
+final routerNotifierProvider = Provider<RouterNotifier>((ref) {
+  return RouterNotifier(ref);
+});
+
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final routerNotifier = ref.watch(routerNotifierProvider);
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/dashboard',
+    refreshListenable: routerNotifier,
+    redirect: (context, state) {
+      final userAsync = ref.read(currentUserProvider);
+
+      // Do not redirect while session is actively loading
+      if (userAsync.isLoading) return null;
+
+      final isAuth = userAsync.asData?.value != null;
+      final location = state.matchedLocation;
+      final isAuthRoute =
+          location == '/login' ||
+          location == '/register' ||
+          location == '/forgot-password';
+
+      // Unauthenticated users attempting to access protected screens
+      if (!isAuth && !isAuthRoute) {
+        return '/login';
+      }
+
+      // Authenticated users trying to access login/register screens
+      if (isAuth && isAuthRoute) {
+        return '/dashboard';
+      }
+
+      return null;
+    },
     routes: [
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/register',
+        name: 'register',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        name: 'forgot-password',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainScaffoldShell(navigationShell: navigationShell);
@@ -116,7 +180,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final numberStr = state.pathParameters['questionNumber'] ?? '0';
           final questionNumber = int.tryParse(numberStr) ?? 0;
-          return QuestionDetailScreen(questionNumber: questionNumber);
+          final question = state.extra is Question
+              ? state.extra as Question
+              : null;
+          return QuestionDetailScreen(
+            questionNumber: questionNumber,
+            initialQuestion: question,
+          );
         },
       ),
     ],

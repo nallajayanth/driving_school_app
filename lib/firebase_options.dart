@@ -64,7 +64,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1096787298947',
     projectId: 'driving-school-aiots',
     storageBucket: 'driving-school-aiots.firebasestorage.app',
-    iosClientId: '1096787298947-pmad9gbo8bgqopbdu2q4rin6l0po68fe.apps.googleusercontent.com',
+    iosClientId:
+        '1096787298947-pmad9gbo8bgqopbdu2q4rin6l0po68fe.apps.googleusercontent.com',
     iosBundleId: 'com.example.drivingSchoolMobileApp',
   );
 
@@ -74,7 +75,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1096787298947',
     projectId: 'driving-school-aiots',
     storageBucket: 'driving-school-aiots.firebasestorage.app',
-    iosClientId: '1096787298947-pmad9gbo8bgqopbdu2q4rin6l0po68fe.apps.googleusercontent.com',
+    iosClientId:
+        '1096787298947-pmad9gbo8bgqopbdu2q4rin6l0po68fe.apps.googleusercontent.com',
     iosBundleId: 'com.example.drivingSchoolMobileApp',
   );
 

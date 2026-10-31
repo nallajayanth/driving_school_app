@@ -320,28 +320,78 @@ class _ExamSessionScreenState extends ConsumerState<ExamSessionScreen> {
 
                 const SizedBox(height: AppConstants.spacingBase),
 
-                // Options list heading
-                Text(
-                  'Select the correct answer:',
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+                // Options list heading & selection mode hint
+                Row(
+                  children: [
+                    Text(
+                      currentQuestion.selectionMode ==
+                              QuestionSelectionMode.multiple
+                          ? 'Select all correct answers:'
+                          : 'Select the correct answer:',
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: AppConstants.spacingSm),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            currentQuestion.selectionMode ==
+                                QuestionSelectionMode.multiple
+                            ? AppColors.primarySubtle
+                            : AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusSm,
+                        ),
+                      ),
+                      child: Text(
+                        currentQuestion.selectionMode ==
+                                QuestionSelectionMode.multiple
+                            ? 'Multiple Choice'
+                            : 'Single Choice',
+                        style: AppTextStyles.caption.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color:
+                              currentQuestion.selectionMode ==
+                                  QuestionSelectionMode.multiple
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppConstants.spacingSm),
 
                 // Options
                 ...currentQuestion.options.map((option) {
-                  final isSelected =
-                      session.selectedAnswers[currentQuestion.id] == option.id;
+                  final isSelected = session.isOptionSelected(
+                    currentQuestion.id,
+                    option.id,
+                  );
+                  final isMultiple =
+                      currentQuestion.selectionMode ==
+                      QuestionSelectionMode.multiple;
 
                   return _buildAnswerOptionCard(
                     context: context,
                     option: option,
                     isSelected: isSelected,
+                    isMultiple: isMultiple,
                     onTap: () {
                       ref
                           .read(examSessionProvider.notifier)
-                          .selectAnswer(currentQuestion.id, option.id);
+                          .toggleOption(
+                            currentQuestion.id,
+                            option.id,
+                            currentQuestion.selectionMode,
+                          );
                     },
                   );
                 }),
@@ -359,6 +409,29 @@ class _ExamSessionScreenState extends ConsumerState<ExamSessionScreen> {
   }
 
   Widget _buildQuestionDiagramPlaceholder(Question question) {
+    if (question.mediaUrl != null && question.mediaUrl!.isNotEmpty) {
+      return Container(
+        width: double.infinity,
+        height: 180,
+        margin: const EdgeInsets.only(bottom: AppConstants.spacingBase),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+          border: Border.all(color: AppColors.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Image.network(
+          question.mediaUrl!,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Center(
+            child: Text(
+              'Image unavailable',
+              style: AppTextStyles.caption.copyWith(color: AppColors.textMuted),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.spacingBase),
@@ -413,6 +486,7 @@ class _ExamSessionScreenState extends ConsumerState<ExamSessionScreen> {
     required BuildContext context,
     required QuestionAnswerOption option,
     required bool isSelected,
+    bool isMultiple = false,
     required VoidCallback onTap,
   }) {
     return AppCard(
@@ -423,13 +497,14 @@ class _ExamSessionScreenState extends ConsumerState<ExamSessionScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Radio indicator
+          // Checkbox or Radio indicator
           Container(
             width: 22,
             height: 22,
             margin: const EdgeInsets.only(top: 2),
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
+              shape: isMultiple ? BoxShape.rectangle : BoxShape.circle,
+              borderRadius: isMultiple ? BorderRadius.circular(4) : null,
               color: isSelected ? AppColors.primary : Colors.transparent,
               border: Border.all(
                 color: isSelected ? AppColors.primary : AppColors.textMuted,
@@ -437,9 +512,9 @@ class _ExamSessionScreenState extends ConsumerState<ExamSessionScreen> {
               ),
             ),
             child: isSelected
-                ? const Icon(
-                    Icons.circle,
-                    size: 10,
+                ? Icon(
+                    isMultiple ? Icons.check : Icons.circle,
+                    size: isMultiple ? 14 : 10,
                     color: AppColors.textInverse,
                   )
                 : null,

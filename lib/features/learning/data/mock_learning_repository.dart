@@ -176,12 +176,47 @@ class MockLearningRepository implements LearningRepository {
   }
 
   @override
-  Future<Question?> getQuestionByNumber(int questionNumber) async {
+  Future<Question?> getQuestionByNumber(
+    int questionNumber, {
+    String? drivingClassId,
+  }) async {
     try {
+      if (drivingClassId != null) {
+        final scoped = _questions
+            .where(
+              (q) =>
+                  q.questionNumber == questionNumber &&
+                  q.drivingClassId.toUpperCase() ==
+                      drivingClassId.toUpperCase(),
+            )
+            .firstOrNull;
+        if (scoped != null) return scoped;
+      }
       return _questions.firstWhere((q) => q.questionNumber == questionNumber);
     } catch (_) {
       return null;
     }
+  }
+
+  @override
+  Future<Question?> getQuestionById(String id) async {
+    try {
+      return _questions.firstWhere((q) => q.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<Question>> getQuestions({String? drivingClassId}) async {
+    if (drivingClassId == null) {
+      return List.unmodifiable(_questions);
+    }
+    return _questions
+        .where(
+          (q) => q.drivingClassId.toUpperCase() == drivingClassId.toUpperCase(),
+        )
+        .toList();
   }
 
   @override

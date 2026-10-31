@@ -109,7 +109,7 @@ class ExamSessionState {
   const ExamSessionState({
     this.questions = const [],
     this.currentIndex = 0,
-    this.selectedAnswers = const {},
+    this.selectedOptionSets = const {},
     this.selectedClasses = const [],
     this.isLoading = false,
     this.isSubmitting = false,
@@ -119,12 +119,29 @@ class ExamSessionState {
 
   final List<Question> questions;
   final int currentIndex;
-  final Map<String, String> selectedAnswers; // questionId -> optionId
+
+  /// Multi-selection map: questionId -> Set of selected option IDs.
+  final Map<String, Set<String>> selectedOptionSets;
+
   final List<String> selectedClasses;
   final bool isLoading;
   final bool isSubmitting;
   final ExamAttempt? completedAttempt;
   final String? errorMessage;
+
+  /// Backward-compatible view returning a `Map<String, String>` of selected answers.
+  /// For single-select or questions with selected options, returns the first selected option ID.
+  Map<String, String> get selectedAnswers => selectedOptionSets.map(
+    (k, v) => MapEntry(k, v.isNotEmpty ? v.first : ''),
+  );
+
+  /// Returns the set of selected option IDs for a given question.
+  Set<String> getSelectedOptionsFor(String questionId) =>
+      selectedOptionSets[questionId] ?? const <String>{};
+
+  /// Checks if a specific option is selected for a given question.
+  bool isOptionSelected(String questionId, String optionId) =>
+      selectedOptionSets[questionId]?.contains(optionId) ?? false;
 
   Question? get currentQuestion =>
       (questions.isNotEmpty &&
@@ -134,7 +151,8 @@ class ExamSessionState {
       : null;
 
   int get totalQuestions => questions.length;
-  int get answeredCount => selectedAnswers.length;
+  int get answeredCount =>
+      selectedOptionSets.values.where((s) => s.isNotEmpty).length;
   bool get isFirstQuestion => currentIndex == 0;
   bool get isLastQuestion =>
       questions.isNotEmpty && currentIndex == questions.length - 1;
@@ -143,6 +161,7 @@ class ExamSessionState {
   ExamSessionState copyWith({
     List<Question>? questions,
     int? currentIndex,
+    Map<String, Set<String>>? selectedOptionSets,
     Map<String, String>? selectedAnswers,
     List<String>? selectedClasses,
     bool? isLoading,
@@ -150,10 +169,15 @@ class ExamSessionState {
     ExamAttempt? completedAttempt,
     String? errorMessage,
   }) {
+    Map<String, Set<String>>? resolvedSets = selectedOptionSets;
+    if (resolvedSets == null && selectedAnswers != null) {
+      resolvedSets = selectedAnswers.map((k, v) => MapEntry(k, {v}));
+    }
+
     return ExamSessionState(
       questions: questions ?? this.questions,
       currentIndex: currentIndex ?? this.currentIndex,
-      selectedAnswers: selectedAnswers ?? this.selectedAnswers,
+      selectedOptionSets: resolvedSets ?? this.selectedOptionSets,
       selectedClasses: selectedClasses ?? this.selectedClasses,
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -183,7 +207,7 @@ class ExamSessionNotifier extends Notifier<ExamSessionState> {
       state = ExamSessionState(
         questions: questions,
         currentIndex: 0,
-        selectedAnswers: const {},
+        selectedOptionSets: const {},
         selectedClasses: selectedClasses,
         isLoading: false,
       );
@@ -195,14 +219,58 @@ class ExamSessionNotifier extends Notifier<ExamSessionState> {
     }
   }
 
-  /// Selects or switches an answer choice for a question.
-  void selectAnswer(String questionId, String optionId) {
+  /// Toggles an option selection for a question according to its [QuestionSelectionMode].
+  ///
+  /// - [QuestionSelectionMode.multiple]: toggles the option (adds if unselected, removes if already selected).
+  /// - [QuestionSelectionMode.single]: replaces with new option, or deselects if tapped again.
+  /// - [QuestionSelectionMode.unknown]: defaults to single replacement for legacy mock questions.
+  void toggleOption(
+    String questionId,
+    String optionId, [
+    QuestionSelectionMode? explicitMode,
+  ]) {
     if (state.isSubmitting || state.isFinished) return;
 
-    final updatedAnswers = Map<String, String>.from(state.selectedAnswers);
-    updatedAnswers[questionId] = optionId;
+    final question = state.questions
+        .where((q) => q.id == questionId)
+        .firstOrNull;
+    final mode =
+        explicitMode ??
+        question?.selectionMode ??
+        QuestionSelectionMode.unknown;
 
-    state = state.copyWith(selectedAnswers: updatedAnswers);
+    final updated = Map<String, Set<String>>.from(
+      state.selectedOptionSets.map((k, v) => MapEntry(k, Set<String>.from(v))),
+    );
+
+    final currentSet = updated[questionId] ?? <String>{};
+
+    if (mode == QuestionSelectionMode.multiple) {
+      if (currentSet.contains(optionId)) {
+        currentSet.remove(optionId);
+      } else {
+        currentSet.add(optionId);
+      }
+      if (currentSet.isEmpty) {
+        updated.remove(questionId);
+      } else {
+        updated[questionId] = currentSet;
+      }
+    } else {
+      // Single selection mode or legacy mock unknown mode
+      if (currentSet.contains(optionId)) {
+        updated.remove(questionId);
+      } else {
+        updated[questionId] = {optionId};
+      }
+    }
+
+    state = state.copyWith(selectedOptionSets: updated);
+  }
+
+  /// Selects or switches an answer choice for a question (backward-compatible).
+  void selectAnswer(String questionId, String optionId) {
+    toggleOption(questionId, optionId);
   }
 
   /// Advances to the next question within valid bounds.
@@ -236,7 +304,7 @@ class ExamSessionNotifier extends Notifier<ExamSessionState> {
       final assessmentService = ref.read(mockAssessmentServiceProvider);
       final attempt = assessmentService.evaluateMockExam(
         questions: state.questions,
-        selectedAnswers: state.selectedAnswers,
+        selectedAnswers: state.selectedOptionSets,
         selectedClasses: state.selectedClasses,
       );
 

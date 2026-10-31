@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1096787298947-ir5003clj7tu5ajavosj4mmpu86dg7qu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.driving_school_mobile_app",
+            "certificate_hash": "96abbe970f5b5b094db6ebe867418fa13e3fbb9c"
+          }
+        },
+        {
           "client_id": "1096787298947-o84vriapv2soord5o0u9q4121a6aj8c2.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -29,6 +37,13 @@
             {
               "client_id": "1096787298947-o84vriapv2soord5o0u9q4121a6aj8c2.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "1096787298947-pmad9gbo8bgqopbdu2q4rin6l0po68fe.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.drivingSchoolMobileApp"
+              }
             }
           ]
         }

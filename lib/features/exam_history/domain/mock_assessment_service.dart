@@ -15,21 +15,39 @@ class MockAssessmentService {
 
   /// Evaluates user responses against question answer options.
   /// Produces a domain [ExamAttempt] tagged with a demonstration status label.
+  ///
+  /// Supports both multi-selection [Map<String, Set<String>>] and single-selection [Map<String, String>].
   ExamAttempt evaluateMockExam({
     required List<Question> questions,
-    required Map<String, String> selectedAnswers, // questionId -> optionId
+    required dynamic
+    selectedAnswers, // Map<String, Set<String>> or Map<String, String>
     required List<String> selectedClasses,
   }) {
     int pointsScored = 0;
 
     for (final question in questions) {
-      final selectedOptionId = selectedAnswers[question.id];
-      if (selectedOptionId != null) {
-        final option = question.options
-            .where((opt) => opt.id == selectedOptionId)
-            .firstOrNull;
-        if (option?.isCorrect == true) {
-          pointsScored++;
+      final rawAnswer = selectedAnswers is Map
+          ? selectedAnswers[question.id]
+          : null;
+      final Set<String> chosenIds = switch (rawAnswer) {
+        Set<String> s => s,
+        Iterable i => i.map((e) => e.toString()).toSet(),
+        String s when s.isNotEmpty => {s},
+        _ => const <String>{},
+      };
+
+      if (chosenIds.isNotEmpty) {
+        final correctOptionIds = question.options
+            .where((opt) => opt.isCorrect == true)
+            .map((opt) => opt.id)
+            .toSet();
+
+        // For mock questions where verified answers exist:
+        if (correctOptionIds.isNotEmpty) {
+          if (chosenIds.length == correctOptionIds.length &&
+              chosenIds.containsAll(correctOptionIds)) {
+            pointsScored++;
+          }
         }
       }
     }
