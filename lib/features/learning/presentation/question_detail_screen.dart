@@ -4,41 +4,89 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../progress/domain/student_question_progress.dart';
+import '../../progress/presentation/progress_providers.dart';
 import '../domain/question.dart';
 import 'learning_providers.dart';
 
 /// Question detail / preview screen reached when a user selects or searches a question.
 ///
-/// Features:
-/// - Supports interactive single and multiple option selection.
+/// Features (Phase 12):
+/// - Automatically records question view in Cloud Firestore (`users/{uid}/question_progress/{questionId}`).
+/// - Updates active resume learning checkpoint (`users/{uid}/learning_state/current`).
+/// - Interactive single and multiple option selection with real-time persistence.
+/// - Bookmark / Unbookmark action with immediate visual feedback.
+/// - Manual "Mark as Reviewed" action chip.
+/// - Option selection reset action.
 /// - Preserves selections per-question across screen navigation.
 /// - Shows clear indicators for multiple-choice vs single-choice questions.
-/// - Safely handles null media (no broken placeholders).
-/// - Enforces Phase 11 security: never reads answer keys or attempts unverified grading.
-class QuestionDetailScreen extends ConsumerWidget {
+/// - Enforces Phase 12 security: direct client Firestore ops, zero grading, answer keys denied.
+class QuestionDetailScreen extends ConsumerStatefulWidget {
   const QuestionDetailScreen({
     super.key,
     required this.questionNumber,
+    this.questionId,
     this.initialQuestion,
   });
 
   final int questionNumber;
+  final String? questionId;
   final Question? initialQuestion;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (initialQuestion != null) {
-      return _buildScaffold(context, ref, initialQuestion!);
+  ConsumerState<QuestionDetailScreen> createState() =>
+      _QuestionDetailScreenState();
+}
+
+class _QuestionDetailScreenState extends ConsumerState<QuestionDetailScreen> {
+  String? _lastRecordedQuestionId;
+
+  void _recordViewIfNeeded(Question question) {
+    if (_lastRecordedQuestionId == question.id) return;
+    _lastRecordedQuestionId = question.id;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(learningProgressRepositoryProvider)
+          .recordQuestionViewed(
+            questionId: question.id,
+            moduleCode: question.drivingClassId,
+            topic: question.topic,
+            questionNumber: question.questionNumber,
+          );
+      ref
+          .read(learningProgressRepositoryProvider)
+          .updateResumeLearningState(
+            moduleCode: question.drivingClassId,
+            questionId: question.id,
+            questionNumber: question.questionNumber,
+            questionText: question.text,
+          );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.initialQuestion != null) {
+      _recordViewIfNeeded(widget.initialQuestion!);
+      return _buildScaffold(context, widget.initialQuestion!);
     }
 
-    final questionAsync = ref.watch(questionLookupProvider(questionNumber));
+    final questionAsync =
+        (widget.questionId != null && widget.questionId!.trim().isNotEmpty)
+        ? ref.watch(questionByIdProvider(widget.questionId!.trim()))
+        : ref.watch(questionLookupProvider(widget.questionNumber));
 
     return questionAsync.when(
       data: (question) {
         if (question == null) {
           return Scaffold(
             appBar: AppBar(
-              title: Text('Question #$questionNumber', style: AppTextStyles.h3),
+              title: Text(
+                'Question #${widget.questionNumber}',
+                style: AppTextStyles.h3,
+              ),
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => Navigator.of(context).pop(),
@@ -57,7 +105,7 @@ class QuestionDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppConstants.spacingBase),
                     Text(
-                      'Question #$questionNumber not found',
+                      'Question #${widget.questionNumber} not found',
                       style: AppTextStyles.h2,
                       textAlign: TextAlign.center,
                     ),
@@ -76,11 +124,15 @@ class QuestionDetailScreen extends ConsumerWidget {
           );
         }
 
-        return _buildScaffold(context, ref, question);
+        _recordViewIfNeeded(question);
+        return _buildScaffold(context, question);
       },
       loading: () => Scaffold(
         appBar: AppBar(
-          title: Text('Question #$questionNumber', style: AppTextStyles.h3),
+          title: Text(
+            'Question #${widget.questionNumber}',
+            style: AppTextStyles.h3,
+          ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.of(context).pop(),
@@ -90,7 +142,10 @@ class QuestionDetailScreen extends ConsumerWidget {
       ),
       error: (err, _) => Scaffold(
         appBar: AppBar(
-          title: Text('Question #$questionNumber', style: AppTextStyles.h3),
+          title: Text(
+            'Question #${widget.questionNumber}',
+            style: AppTextStyles.h3,
+          ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.of(context).pop(),
@@ -113,8 +168,9 @@ class QuestionDetailScreen extends ConsumerWidget {
                 Text(err.toString(), textAlign: TextAlign.center),
                 const SizedBox(height: AppConstants.spacingBase),
                 ElevatedButton.icon(
-                  onPressed: () =>
-                      ref.invalidate(questionLookupProvider(questionNumber)),
+                  onPressed: () => ref.invalidate(
+                    questionLookupProvider(widget.questionNumber),
+                  ),
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retry'),
                 ),
@@ -126,14 +182,13 @@ class QuestionDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildScaffold(
-    BuildContext context,
-    WidgetRef ref,
-    Question question,
-  ) {
+  Widget _buildScaffold(BuildContext context, Question question) {
     final selectedOptions = ref.watch(
       questionSelectedOptionsProvider(question.id),
     );
+    final isBookmarked = ref.watch(isQuestionBookmarkedProvider(question.id));
+    final progress = ref.watch(singleQuestionProgressProvider(question.id));
+    final isReviewed = progress?.studyStatus == StudyStatus.reviewed;
     final isMultiple = question.selectionMode == QuestionSelectionMode.multiple;
     final isUnknown = question.selectionMode == QuestionSelectionMode.unknown;
 
@@ -148,17 +203,46 @@ class QuestionDetailScreen extends ConsumerWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
+          // Bookmark Action
+          IconButton(
+            icon: Icon(
+              isBookmarked
+                  ? Icons.bookmark_rounded
+                  : Icons.bookmark_border_rounded,
+              color: isBookmarked ? const Color(0xFFF59E0B) : null,
+            ),
+            tooltip: isBookmarked ? 'Remove Bookmark' : 'Bookmark Question',
+            onPressed: () {
+              ref
+                  .read(learningProgressRepositoryProvider)
+                  .toggleBookmark(
+                    questionId: question.id,
+                    moduleCode: question.drivingClassId,
+                    topic: question.topic,
+                    questionNumber: question.questionNumber,
+                    questionText: question.text,
+                  );
+            },
+          ),
+
+          // Reset selection button
           if (selectedOptions.isNotEmpty)
             TextButton(
               onPressed: () {
                 ref
                     .read(questionStudySelectionProvider.notifier)
-                    .clearQuestion(question.id);
+                    .clearQuestion(
+                      question.id,
+                      moduleCode: question.drivingClassId,
+                      topic: question.topic,
+                      questionNumber: question.questionNumber,
+                    );
               },
               child: Text(
-                'Clear',
+                'Reset',
                 style: AppTextStyles.labelMedium.copyWith(
                   color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -173,6 +257,7 @@ class QuestionDetailScreen extends ConsumerWidget {
             Wrap(
               spacing: 8,
               runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 // Class chip
                 Container(
@@ -259,44 +344,120 @@ class QuestionDetailScreen extends ConsumerWidget {
                       Text(
                         isMultiple
                             ? 'Multiple Choice'
-                            : (isUnknown ? 'Unknown Mode' : 'Single Choice'),
+                            : (isUnknown ? 'Mode Unknown' : 'Single Choice'),
                         style: AppTextStyles.label.copyWith(
                           color: isMultiple
                               ? AppColors.primaryDark
                               : (isUnknown
                                     ? AppColors.textSecondary
                                     : AppColors.success),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
                 ),
 
-                // Topic chip (if present)
-                if (question.topic != null && question.topic!.isNotEmpty)
-                  Container(
+                // Mark as Reviewed Interactive Chip
+                InkWell(
+                  onTap: () {
+                    ref
+                        .read(learningProgressRepositoryProvider)
+                        .markQuestionReviewed(
+                          questionId: question.id,
+                          moduleCode: question.drivingClassId,
+                          reviewed: !isReviewed,
+                          topic: question.topic,
+                          questionNumber: question.questionNumber,
+                        );
+                  },
+                  borderRadius: BorderRadius.circular(AppConstants.radiusPill),
+                  child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
+                      color: isReviewed
+                          ? AppColors.box3Background
+                          : AppColors.surfaceVariant,
                       borderRadius: BorderRadius.circular(
                         AppConstants.radiusPill,
                       ),
-                    ),
-                    child: Text(
-                      question.topic!,
-                      style: AppTextStyles.label.copyWith(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
+                      border: Border.all(
+                        color: isReviewed
+                            ? AppColors.success
+                            : AppColors.border,
+                        width: isReviewed ? 1.2 : 1.0,
                       ),
                     ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isReviewed
+                              ? Icons.check_circle_rounded
+                              : Icons.check_circle_outline_rounded,
+                          size: 14,
+                          color: isReviewed
+                              ? AppColors.success
+                              : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          isReviewed ? 'Reviewed ✓' : 'Mark as reviewed',
+                          style: AppTextStyles.label.copyWith(
+                            color: isReviewed
+                                ? AppColors.success
+                                : AppColors.textSecondary,
+                            fontWeight: isReviewed
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
               ],
             ),
+
+            // Topic description if available
+            if (question.topic != null && question.topic!.isNotEmpty) ...[
+              const SizedBox(height: AppConstants.spacingSm),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.folder_open_rounded,
+                      size: 15,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        _formatTopicTitle(question.topic!),
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: AppConstants.spacingMd),
 
             // Question Statement Card
@@ -411,6 +572,9 @@ class QuestionDetailScreen extends ConsumerWidget {
                               question.id,
                               option.id,
                               question.selectionMode,
+                              moduleCode: question.drivingClassId,
+                              topic: question.topic,
+                              questionNumber: question.questionNumber,
                             );
                       },
                 borderColor: isSelected ? AppColors.primary : AppColors.border,
@@ -469,9 +633,30 @@ class QuestionDetailScreen extends ConsumerWidget {
               );
             }),
 
+            if (selectedOptions.isNotEmpty) ...[
+              const SizedBox(height: AppConstants.spacingSm),
+              Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    ref
+                        .read(questionStudySelectionProvider.notifier)
+                        .clearQuestion(
+                          question.id,
+                          moduleCode: question.drivingClassId,
+                          topic: question.topic,
+                          questionNumber: question.questionNumber,
+                        );
+                  },
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Reset selections'),
+                ),
+              ),
+            ],
+
             const SizedBox(height: AppConstants.spacingBase),
 
-            // Practice Mode Notice regarding Phase 12 Cloud Functions verification
+            // Practice Mode Notice
             Container(
               padding: const EdgeInsets.all(AppConstants.spacingBase),
               decoration: BoxDecoration(
@@ -504,5 +689,15 @@ class QuestionDetailScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _formatTopicTitle(String rawTopic) {
+    return rawTopic
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map(
+          (w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '',
+        )
+        .join(' ');
   }
 }

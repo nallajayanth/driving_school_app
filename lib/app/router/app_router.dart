@@ -180,11 +180,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final numberStr = state.pathParameters['questionNumber'] ?? '0';
           final questionNumber = int.tryParse(numberStr) ?? 0;
-          final question = state.extra is Question
-              ? state.extra as Question
-              : null;
+          final extra = state.extra;
+          final Question? question = extra is Question ? extra : null;
+          final String? questionId = extra is String
+              ? extra
+              : state.uri.queryParameters['id'];
           return QuestionDetailScreen(
             questionNumber: questionNumber,
+            questionId: questionId,
             initialQuestion: question,
           );
         },

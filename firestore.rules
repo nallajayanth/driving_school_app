@@ -1,0 +1,124 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // HELPER FUNCTIONS
+    // =========================================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // =========================================================================
+    // 1. PUBLIC QUESTION CATALOGUE
+    // =========================================================================
+
+    // Signed-in students can read questions. Client modifications are denied.
+    match /questions/{questionId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // =========================================================================
+    // 2. PRIVATE ANSWER KEYS (SERVER-ONLY / UNGRADED IN PHASE 12)
+    // =========================================================================
+
+    // Private answer keys must NEVER be accessible by client applications.
+    match /question_answer_keys/{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // 3. INTERNAL QUESTION SOURCES
+    // =========================================================================
+
+    // Question source mapping documents are private and forbidden for clients.
+    match /question_sources/{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // 4. USER PROFILES & USER-OWNED SUBCOLLECTIONS
+    // =========================================================================
+
+    match /users/{userId} {
+      // User Profile Document: Owner-only read access
+      allow read: if isOwner(userId);
+
+      // Profile modifications: Strictly limited to application profile fields.
+      // Rejects arbitrary or privileged fields (e.g. role, isAdmin, permissions).
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly([
+          'id', 'name', 'email', 'preferredLanguage', 'createdAt', 'updatedAt'
+        ])
+        && (!('id' in request.resource.data) || (request.resource.data.id is string && request.resource.data.id == userId))
+        && (resource == null || !('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt)
+        && (!('createdAt' in request.resource.data) || request.resource.data.createdAt is timestamp)
+        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp)
+        && (!('name' in request.resource.data) || request.resource.data.name == null || (request.resource.data.name is string && request.resource.data.name.size() <= 100))
+        && (!('email' in request.resource.data) || request.resource.data.email == null || (request.resource.data.email is string && request.resource.data.email.size() <= 200))
+        && (!('preferredLanguage' in request.resource.data) || request.resource.data.preferredLanguage == null || (request.resource.data.preferredLanguage is string && request.resource.data.preferredLanguage.size() <= 10));
+
+      allow delete: if false;
+
+      // -----------------------------------------------------------------------
+      // 4a. Student Question Learning Progress (Phase 12 Feature A)
+      // Path: users/{userId}/question_progress/{questionId}
+      // -----------------------------------------------------------------------
+      match /question_progress/{questionId} {
+        allow read, delete: if isOwner(userId);
+
+        allow create, update: if isOwner(userId)
+          && request.resource.data.keys().hasOnly([
+            'questionId', 'moduleCode', 'languageCode', 'topic',
+            'selectedOptionIds', 'studyStatus', 'firstViewedAt',
+            'lastViewedAt', 'updatedAt', 'questionNumber'
+          ])
+          && request.resource.data.questionId == questionId
+          && request.resource.data.moduleCode in ['GW', 'B']
+          && request.resource.data.studyStatus in ['viewed', 'in_progress', 'reviewed']
+          && (!('selectedOptionIds' in request.resource.data) || request.resource.data.selectedOptionIds is list)
+          && (resource == null || !('firstViewedAt' in resource.data) || request.resource.data.firstViewedAt == resource.data.firstViewedAt);
+      }
+
+      // -----------------------------------------------------------------------
+      // 4b. Student Question Bookmarks (Phase 12 Feature B)
+      // Path: users/{userId}/bookmarks/{questionId}
+      // -----------------------------------------------------------------------
+      match /bookmarks/{questionId} {
+        allow read, delete: if isOwner(userId);
+
+        allow create, update: if isOwner(userId)
+          && request.resource.data.keys().hasOnly([
+            'questionId', 'moduleCode', 'topic', 'createdAt',
+            'questionNumber', 'questionText'
+          ])
+          && request.resource.data.questionId == questionId
+          && request.resource.data.moduleCode in ['GW', 'B'];
+      }
+
+      // -----------------------------------------------------------------------
+      // 4c. Active Learning Checkpoint State (Phase 12 Feature D)
+      // Path: users/{userId}/learning_state/{docId}
+      // -----------------------------------------------------------------------
+      match /learning_state/{docId} {
+        allow read, delete: if isOwner(userId);
+
+        allow create, update: if isOwner(userId)
+          && docId == 'current'
+          && request.resource.data.keys().hasOnly([
+            'lastModuleCode', 'lastQuestionId', 'lastQuestionNumber',
+            'lastQuestionText', 'updatedAt'
+          ])
+          && request.resource.data.lastModuleCode in ['GW', 'B']
+          && request.resource.data.lastQuestionId is string;
+      }
+    }
+  }
+}

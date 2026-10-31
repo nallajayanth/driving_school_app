@@ -7,6 +7,7 @@ import '../data/mock_learning_repository.dart';
 import '../domain/driving_class.dart';
 import '../domain/learning_unit.dart';
 import '../domain/question.dart';
+import '../../progress/presentation/progress_providers.dart';
 
 /// Provider exposing the mock learning repository instance.
 final mockLearningRepositoryProvider = Provider<MockLearningRepository>((ref) {
@@ -94,19 +95,44 @@ final questionLookupProvider = FutureProvider.family<Question?, int>((
   return repo.getQuestionByNumber(questionNumber, drivingClassId: currentClass);
 });
 
+/// FutureProvider looking up an individual question by its canonical document ID (e.g. "AT_GW_021").
+final questionByIdProvider = FutureProvider.family<Question?, String>((
+  ref,
+  questionId,
+) async {
+  final repo = ref.watch(learningRepositoryProvider);
+  return repo.getQuestionById(questionId);
+});
+
 /// Interactive study selection notifier managing option selections for questions.
 ///
 /// Stores `Map<String, Set<String>>` (questionId -> Set of selected option IDs).
+/// Automatically synchronizes with [studentProgressMapProvider] and persists
+/// selection modifications to [learningProgressRepositoryProvider].
 class QuestionStudySelectionNotifier
     extends Notifier<Map<String, Set<String>>> {
   @override
-  Map<String, Set<String>> build() => const {};
+  Map<String, Set<String>> build() {
+    final progressMapAsync = ref.watch(studentProgressMapProvider);
+    final map = <String, Set<String>>{};
+    if (progressMapAsync.hasValue && progressMapAsync.value != null) {
+      for (final entry in progressMapAsync.value!.entries) {
+        if (entry.value.selectedOptionIds.isNotEmpty) {
+          map[entry.key] = Set<String>.from(entry.value.selectedOptionIds);
+        }
+      }
+    }
+    return map;
+  }
 
   void toggleOption(
     String questionId,
     String optionId,
-    QuestionSelectionMode mode,
-  ) {
+    QuestionSelectionMode mode, {
+    String moduleCode = 'GW',
+    String? topic,
+    int? questionNumber,
+  }) {
     final updated = Map<String, Set<String>>.from(
       state.map((k, v) => MapEntry(k, Set<String>.from(v))),
     );
@@ -132,12 +158,37 @@ class QuestionStudySelectionNotifier
     }
 
     state = updated;
+
+    // Asynchronously persist to the active progress repository
+    final repo = ref.read(learningProgressRepositoryProvider);
+    final selectedList = updated[questionId]?.toList() ?? const <String>[];
+    repo.saveSelectedOptions(
+      questionId: questionId,
+      moduleCode: moduleCode,
+      optionIds: selectedList,
+      topic: topic,
+      questionNumber: questionNumber,
+    );
   }
 
-  void clearQuestion(String questionId) {
+  void clearQuestion(
+    String questionId, {
+    String moduleCode = 'GW',
+    String? topic,
+    int? questionNumber,
+  }) {
     final updated = Map<String, Set<String>>.from(state);
     updated.remove(questionId);
     state = updated;
+
+    // Asynchronously reset selections in the progress repository
+    final repo = ref.read(learningProgressRepositoryProvider);
+    repo.resetQuestionSelection(
+      questionId: questionId,
+      moduleCode: moduleCode,
+      topic: topic,
+      questionNumber: questionNumber,
+    );
   }
 }
 

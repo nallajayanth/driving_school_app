@@ -5,6 +5,7 @@ import '../data/auth_repository.dart';
 import '../data/firebase_auth_repository.dart';
 import '../data/mock_auth_repository.dart';
 import '../domain/user.dart';
+import '../../progress/presentation/progress_providers.dart';
 
 /// Notifier managing whether the application is running in local Demo/Mock mode.
 class DemoModeNotifier extends Notifier<bool> {
@@ -80,12 +81,23 @@ class AuthNotifier extends AsyncNotifier<User?> {
     return currentUser;
   }
 
+  void _clearUserProgress() {
+    try {
+      ref.read(learningProgressRepositoryProvider).clearCache();
+    } catch (_) {}
+    ref.invalidate(studentProgressMapProvider);
+    ref.invalidate(bookmarksListProvider);
+    ref.invalidate(resumeLearningStateProvider);
+    ref.invalidate(studentLearningSummaryProvider);
+  }
+
   /// Authenticates using email and password.
   Future<void> signInWithEmailAndPassword({
     required String email,
     required String password,
   }) async {
     ref.read(isDemoModeProvider.notifier).setDemoMode(false);
+    _clearUserProgress();
     final repo = ref.read(authRepositoryProvider);
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -104,6 +116,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
     required String name,
   }) async {
     ref.read(isDemoModeProvider.notifier).setDemoMode(false);
+    _clearUserProgress();
     final repo = ref.read(authRepositoryProvider);
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -119,6 +132,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
   /// Authenticates using Google Sign-In.
   Future<void> signInWithGoogle() async {
     ref.read(isDemoModeProvider.notifier).setDemoMode(false);
+    _clearUserProgress();
     final repo = ref.read(authRepositoryProvider);
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -146,6 +160,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
   /// Enables offline demo mode with mock learner data.
   Future<void> enableDemoMode() async {
     ref.read(isDemoModeProvider.notifier).setDemoMode(true);
+    _clearUserProgress();
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
@@ -165,6 +180,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
   /// Terminates the active session.
   Future<void> logout() async {
     ref.read(isDemoModeProvider.notifier).setDemoMode(false);
+    _clearUserProgress();
     final repo = ref.read(authRepositoryProvider);
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {

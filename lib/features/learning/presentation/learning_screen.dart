@@ -7,6 +7,10 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../authentication/presentation/auth_providers.dart';
+import '../../progress/domain/question_bookmark.dart';
+import '../../progress/domain/resume_learning_state.dart';
+import '../../progress/domain/student_question_progress.dart';
+import '../../progress/presentation/progress_providers.dart';
 import '../data/firestore_learning_repository.dart';
 import '../domain/learning_unit.dart';
 import '../domain/question.dart';
@@ -15,10 +19,11 @@ import 'widgets/class_selector_tabs.dart';
 import 'widgets/learning_unit_card.dart';
 import 'widgets/question_search_bar.dart';
 
-enum _LearningViewMode { questions, topics }
+enum _LearningViewMode { questions, topics, bookmarks }
 
 /// Mobile-first Learning Overview Screen replicating the Powerdrive Learning layout.
 /// Connected to live Cloud Firestore Austrian driving theory catalogue (42 GW / 32 B).
+/// Includes Phase 12 student progress pills, bookmarks list, and continue learning checkpoint.
 class LearningScreen extends ConsumerStatefulWidget {
   const LearningScreen({super.key});
 
@@ -83,6 +88,8 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
     final classesAsync = ref.watch(drivingClassesProvider);
     final unitsAsync = ref.watch(learningUnitsProvider(selectedClass));
     final questionsAsync = ref.watch(classQuestionsProvider(selectedClass));
+    final bookmarksAsync = ref.watch(bookmarksListProvider);
+    final resumeStateAsync = ref.watch(resumeLearningStateProvider);
 
     final effectiveView =
         _activeView ??
@@ -92,12 +99,16 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
 
     final questionsCount = questionsAsync.value?.length ?? 0;
     final unitsCount = unitsAsync.value?.length ?? 0;
+    final bookmarksCount = bookmarksAsync.value?.length ?? 0;
+    final resumeState = resumeStateAsync.value;
 
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(drivingClassesProvider);
         ref.invalidate(learningUnitsProvider(selectedClass));
         ref.invalidate(classQuestionsProvider(selectedClass));
+        ref.invalidate(bookmarksListProvider);
+        ref.invalidate(resumeLearningStateProvider);
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -164,18 +175,26 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
             ),
             const SizedBox(height: AppConstants.spacingMd),
 
-            // View Switcher (Questions vs Topics)
+            // Resume Learning Banner (if active checkpoint exists)
+            if (resumeState != null &&
+                resumeState.lastQuestionNumber != null) ...[
+              _buildResumeLearningBanner(context, resumeState),
+              const SizedBox(height: AppConstants.spacingMd),
+            ],
+
+            // View Switcher (Questions vs Topics vs Bookmarks)
             _buildViewSwitcher(
               activeView: effectiveView,
               questionCount: questionsCount,
               unitCount: unitsCount,
+              bookmarkCount: bookmarksCount,
             ),
             const SizedBox(height: AppConstants.spacingMd),
 
             // Active View Body
             if (effectiveView == _LearningViewMode.questions) ...[
               _buildQuestionsSection(context, selectedClass, questionsAsync),
-            ] else ...[
+            ] else if (effectiveView == _LearningViewMode.topics) ...[
               unitsAsync.when(
                 data: (units) => _buildUnitsList(context, units),
                 loading: () => const Padding(
@@ -187,10 +206,79 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
                 error: (err, _) =>
                     _buildErrorCard(selectedClass, err.toString()),
               ),
+            ] else ...[
+              _buildBookmarksSection(context, bookmarksAsync),
             ],
             const SizedBox(height: AppConstants.spacing2xl),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildResumeLearningBanner(
+    BuildContext context,
+    ResumeLearningState resumeState,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(AppConstants.spacingSm),
+      decoration: BoxDecoration(
+        color: AppColors.primarySubtle,
+        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.play_circle_fill_rounded,
+            color: AppColors.primary,
+            size: 24,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Continue Learning',
+                  style: AppTextStyles.label.copyWith(
+                    color: AppColors.primaryDark,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  'Question #${resumeState.lastQuestionNumber} (${resumeState.lastModuleCode})',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (resumeState.lastQuestionNumber != null) {
+                context.push(
+                  '/learning/question/${resumeState.lastQuestionNumber}?id=${resumeState.lastQuestionId}',
+                  extra: resumeState.lastQuestionId,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              'Resume',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -263,6 +351,7 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
     required _LearningViewMode activeView,
     required int questionCount,
     required int unitCount,
+    required int bookmarkCount,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -298,6 +387,19 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
               },
             ),
           ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _buildSwitcherTab(
+              title: 'Bookmarks ($bookmarkCount)',
+              icon: Icons.bookmark_rounded,
+              isSelected: activeView == _LearningViewMode.bookmarks,
+              onTap: () {
+                setState(() {
+                  _activeView = _LearningViewMode.bookmarks;
+                });
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -313,7 +415,7 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppConstants.radiusSm),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.surface : Colors.transparent,
           borderRadius: BorderRadius.circular(AppConstants.radiusSm),
@@ -332,10 +434,10 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
           children: [
             Icon(
               icon,
-              size: 15,
+              size: 14,
               color: isSelected ? AppColors.primary : AppColors.textMuted,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             Flexible(
               child: Text(
                 title,
@@ -344,7 +446,7 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
                       ? AppColors.textPrimary
                       : AppColors.textSecondary,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 12,
+                  fontSize: 11,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -400,13 +502,219 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
               _selectedTopicFilter = unit.title;
               _activeView = _LearningViewMode.questions;
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Showing questions for topic: ${unit.title}'),
-                duration: const Duration(seconds: 2),
-              ),
-            );
           },
+        );
+      },
+    );
+  }
+
+  Widget _buildBookmarksSection(
+    BuildContext context,
+    AsyncValue<List<QuestionBookmark>> bookmarksAsync,
+  ) {
+    return bookmarksAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
+      ),
+      error: (err, _) => Container(
+        padding: const EdgeInsets.all(AppConstants.spacingBase),
+        decoration: BoxDecoration(
+          color: AppColors.logoutBackground,
+          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline, color: AppColors.error, size: 24),
+            const SizedBox(height: 8),
+            Text('Failed to load bookmarks', style: AppTextStyles.h3),
+            const SizedBox(height: 4),
+            Text(
+              err.toString(),
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodySmall,
+            ),
+          ],
+        ),
+      ),
+      data: (bookmarks) {
+        if (bookmarks.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(AppConstants.spacingXl),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Center(
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.bookmark_border_rounded,
+                    size: 44,
+                    color: AppColors.textMuted,
+                  ),
+                  const SizedBox(height: AppConstants.spacingSm),
+                  Text(
+                    'No bookmarked questions yet',
+                    style: AppTextStyles.h3.copyWith(fontSize: 16),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Tap the bookmark icon on any question in GW or Category B to save it for quick review.',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Bookmarked Questions (${bookmarks.length})',
+                  style: AppTextStyles.h3.copyWith(fontSize: 15),
+                ),
+                Text(
+                  'Across GW & Category B',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppConstants.spacingSm),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: bookmarks.length,
+              separatorBuilder: (context, index) =>
+                  const SizedBox(height: AppConstants.spacingSm),
+              itemBuilder: (context, index) {
+                final bookmark = bookmarks[index];
+                return AppCard(
+                  onTap: () {
+                    if (bookmark.questionNumber != null) {
+                      context.push(
+                        '/learning/question/${bookmark.questionNumber}?id=${bookmark.questionId}',
+                        extra: bookmark.questionId,
+                      );
+                    }
+                  },
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                if (bookmark.questionNumber != null) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primarySubtle,
+                                      borderRadius: BorderRadius.circular(
+                                        AppConstants.radiusSm,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '#${bookmark.questionNumber}',
+                                      style: AppTextStyles.caption.copyWith(
+                                        color: AppColors.primaryDark,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surfaceVariant,
+                                    borderRadius: BorderRadius.circular(
+                                      AppConstants.radiusSm,
+                                    ),
+                                    border: Border.all(color: AppColors.border),
+                                  ),
+                                  child: Text(
+                                    bookmark.moduleCode,
+                                    style: AppTextStyles.caption.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                                if (bookmark.topic != null &&
+                                    bookmark.topic!.isNotEmpty) ...[
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      _formatTopicTitle(bookmark.topic!),
+                                      style: AppTextStyles.caption.copyWith(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 11,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              bookmark.questionText ??
+                                  'Question #${bookmark.questionNumber ?? bookmark.questionId}',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.bookmark_remove_rounded,
+                          color: Color(0xFFF59E0B),
+                        ),
+                        tooltip: 'Remove bookmark',
+                        onPressed: () {
+                          ref
+                              .read(learningProgressRepositoryProvider)
+                              .toggleBookmark(
+                                questionId: bookmark.questionId,
+                                moduleCode: bookmark.moduleCode,
+                                topic: bookmark.topic,
+                                questionNumber: bookmark.questionNumber,
+                                questionText: bookmark.questionText,
+                              );
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
         );
       },
     );
@@ -419,19 +727,8 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
   ) {
     return questionsAsync.when(
       loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(
-          child: Column(
-            children: [
-              CircularProgressIndicator(strokeWidth: 2),
-              SizedBox(height: 10),
-              Text(
-                'Loading questions from catalogue...',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
       ),
       error: (err, _) =>
           _buildQuestionsErrorCard(selectedClass, err.toString()),
@@ -439,11 +736,10 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
         final filteredQuestions = _selectedTopicFilter == null
             ? questions
             : questions.where((q) {
-                final topic = q.topic ?? '';
-                final formatted = _formatTopicTitle(topic);
-                return formatted.toLowerCase() ==
-                        _selectedTopicFilter!.toLowerCase() ||
-                    topic.toLowerCase() == _selectedTopicFilter!.toLowerCase();
+                if (q.topic == null) return false;
+                final formattedTopic = _formatTopicTitle(q.topic!);
+                return formattedTopic.toLowerCase() ==
+                    _selectedTopicFilter!.toLowerCase();
               }).toList();
 
         return Column(
@@ -457,25 +753,23 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySubtle,
+                  color: AppColors.surfaceVariant,
                   borderRadius: BorderRadius.circular(AppConstants.radiusSm),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                  ),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   children: [
                     const Icon(
-                      Icons.filter_alt,
-                      size: 14,
+                      Icons.filter_alt_outlined,
+                      size: 16,
                       color: AppColors.primary,
                     ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Filtered by: $_selectedTopicFilter (${filteredQuestions.length} questions)',
+                        'Filtered by topic: $_selectedTopicFilter',
                         style: AppTextStyles.caption.copyWith(
-                          color: AppColors.primaryDark,
+                          color: AppColors.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -486,13 +780,10 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
                           _selectedTopicFilter = null;
                         });
                       },
-                      child: const Padding(
-                        padding: EdgeInsets.all(2),
-                        child: Icon(
-                          Icons.close,
-                          size: 16,
-                          color: AppColors.primary,
-                        ),
+                      child: const Icon(
+                        Icons.close,
+                        size: 16,
+                        color: AppColors.textMuted,
                       ),
                     ),
                   ],
@@ -572,6 +863,8 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
     final selectedOptions = ref.watch(
       questionSelectedOptionsProvider(question.id),
     );
+    final progress = ref.watch(singleQuestionProgressProvider(question.id));
+    final isBookmarked = ref.watch(isQuestionBookmarkedProvider(question.id));
 
     return AppCard(
       onTap: () {
@@ -621,6 +914,12 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
               ),
               const SizedBox(width: 6),
 
+              // Study Status Pill
+              if (progress != null) ...[
+                _buildStatusPill(progress.studyStatus),
+                const SizedBox(width: 6),
+              ],
+
               // Topic Pill (if available)
               if (question.topic != null && question.topic!.isNotEmpty)
                 Flexible(
@@ -649,6 +948,35 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
                 ),
 
               const Spacer(),
+
+              // Bookmark icon button
+              InkWell(
+                onTap: () {
+                  ref
+                      .read(learningProgressRepositoryProvider)
+                      .toggleBookmark(
+                        questionId: question.id,
+                        moduleCode: question.drivingClassId,
+                        topic: question.topic,
+                        questionNumber: question.questionNumber,
+                        questionText: question.text,
+                      );
+                },
+                borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    isBookmarked
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                    size: 18,
+                    color: isBookmarked
+                        ? const Color(0xFFF59E0B)
+                        : AppColors.textMuted,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
 
               // Selection mode chip
               Icon(
@@ -708,6 +1036,9 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
                             question.id,
                             option.id,
                             question.selectionMode,
+                            moduleCode: question.drivingClassId,
+                            topic: question.topic,
+                            questionNumber: question.questionNumber,
                           );
                     },
                     borderRadius: BorderRadius.circular(AppConstants.radiusSm),
@@ -779,6 +1110,57 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
               }).toList(),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusPill(StudyStatus status) {
+    Color bg;
+    Color fg;
+    String label;
+    IconData icon;
+
+    switch (status) {
+      case StudyStatus.reviewed:
+        bg = AppColors.box3Background;
+        fg = AppColors.success;
+        label = 'Reviewed';
+        icon = Icons.check_circle_rounded;
+        break;
+      case StudyStatus.inProgress:
+        bg = const Color(0xFFFEF3C7);
+        fg = const Color(0xFFD97706);
+        label = 'In Progress';
+        icon = Icons.edit_note_rounded;
+        break;
+      case StudyStatus.viewed:
+        bg = AppColors.primarySubtle;
+        fg = AppColors.primary;
+        label = 'Viewed';
+        icon = Icons.visibility_outlined;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: fg),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: AppTextStyles.caption.copyWith(
+              color: fg,
+              fontWeight: FontWeight.w700,
+              fontSize: 9,
+            ),
+          ),
         ],
       ),
     );

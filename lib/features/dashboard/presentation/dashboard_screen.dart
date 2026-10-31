@@ -42,7 +42,7 @@ class DashboardScreen extends ConsumerWidget {
               const SizedBox(height: AppConstants.spacingMd),
 
               // Welcome Card with Quick Actions
-              _buildWelcomeCard(context, userAsync),
+              _buildWelcomeCard(context, ref, userAsync),
               const SizedBox(height: AppConstants.spacingBase),
 
               // Learning Progress Section
@@ -95,12 +95,17 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   /// Welcome card hosting personalized greeting and the 3 blue shortcut buttons.
-  Widget _buildWelcomeCard(BuildContext context, AsyncValue userAsync) {
+  Widget _buildWelcomeCard(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue userAsync,
+  ) {
     final userName = userAsync.when(
       data: (user) => user?.name ?? 'Student',
       loading: () => 'Student',
       error: (e, s) => 'Student',
     );
+    final resumeState = ref.watch(resumeLearningStateProvider).value;
 
     return AppCard(
       padding: const EdgeInsets.all(AppConstants.spacingBase),
@@ -129,6 +134,69 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppConstants.spacingLg),
+
+          // Resume Learning Action (if available)
+          if (resumeState != null &&
+              resumeState.lastQuestionNumber != null) ...[
+            InkWell(
+              onTap: () {
+                context.push(
+                  '/learning/question/${resumeState.lastQuestionNumber}?id=${resumeState.lastQuestionId}',
+                  extra: resumeState.lastQuestionId,
+                );
+              },
+              borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+              child: Container(
+                padding: const EdgeInsets.all(AppConstants.spacingMd),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySubtle,
+                  borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.play_circle_fill_rounded,
+                      color: AppColors.primary,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Continue Learning',
+                            style: AppTextStyles.label.copyWith(
+                              color: AppColors.primaryDark,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Text(
+                            'Resume Question #${resumeState.lastQuestionNumber} (${resumeState.lastModuleCode})',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppConstants.spacingMd),
+          ],
 
           // Shortcut 1: Practice exam questions
           DashboardActionButton(
