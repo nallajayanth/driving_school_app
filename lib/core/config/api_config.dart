@@ -1,15 +1,14 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode, debugPrint;
+import 'package:flutter/foundation.dart' show kReleaseMode, debugPrint;
 
 /// Centralized API configuration for connecting the Flutter mobile app to the Node.js backend.
 ///
 /// Supports:
-/// - Environment override via `--dart-define=BACKEND_URL=...` (for physical devices or staging/production)
+/// - Primary production Vercel cloud backend: https://driving-school-app-backend.vercel.app
+/// - Environment override via `--dart-define=BACKEND_URL=...`
 /// - Physical Android phone via USB `adb reverse tcp:5000 tcp:5000` (`http://127.0.0.1:5000`)
 /// - Physical Android phone via Wi-Fi LAN (`http://10.10.26.95:5000`)
 /// - Android emulator host alias (`http://10.0.2.2:5000`)
-/// - iOS simulator / desktop localhost (`http://127.0.0.1:5000`)
-/// - Automatic candidate failover in development
+/// - Automatic candidate failover in development and production
 class ApiConfig {
   ApiConfig._();
 
@@ -51,25 +50,11 @@ class ApiConfig {
     if (_envBackendUrl.isNotEmpty) {
       return [_envBackendUrl.replaceAll(RegExp(r'/+$'), '')];
     }
-    if (kIsWeb) {
-      return [
-        liveBackendUrl,
-        'http://127.0.0.1:$defaultPort',
-      ];
-    }
-    try {
-      if (Platform.isAndroid) {
-        return [
-          'http://127.0.0.1:$defaultPort',   // 1. USB with adb reverse (fastest for local dev)
-          liveBackendUrl,                    // 2. Live Vercel cloud backend (automatic cloud fallback)
-          'http://10.10.26.95:$defaultPort',  // 3. Local Wi-Fi LAN
-          'http://10.0.2.2:$defaultPort',     // 4. Android Studio Emulator loopback
-        ];
-      }
-    } catch (_) {}
     return [
-      'http://127.0.0.1:$defaultPort',
-      liveBackendUrl,
+      liveBackendUrl,                    // 1. Live Vercel cloud backend (Primary)
+      'http://127.0.0.1:$defaultPort',   // 2. Local USB with adb reverse
+      'http://10.10.26.95:$defaultPort',  // 3. Local Wi-Fi LAN
+      'http://10.0.2.2:$defaultPort',     // 4. Android Studio Emulator loopback
     ];
   }
 

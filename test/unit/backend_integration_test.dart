@@ -15,8 +15,9 @@ void main() {
       ApiConfig.setBaseUrl(null);
     });
 
-    test('Default baseUrl uses standard host and default port 5000', () {
-      expect(ApiConfig.baseUrl, contains(':5000'));
+    test('Default baseUrl uses valid URL', () {
+      expect(ApiConfig.baseUrl, isNotEmpty);
+      expect(ApiConfig.baseUrl, startsWith('http'));
       expect(ApiConfig.healthUrl, contains('/api/health'));
       expect(ApiConfig.questionsUrl, contains('/api/questions'));
       expect(ApiConfig.examSubmitUrl, contains('/api/exams/submit'));
