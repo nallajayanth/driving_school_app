@@ -11,6 +11,7 @@ import '../../progress/domain/question_bookmark.dart';
 import '../../progress/domain/resume_learning_state.dart';
 import '../../progress/domain/student_question_progress.dart';
 import '../../progress/presentation/progress_providers.dart';
+import '../data/backend_learning_repository.dart';
 import '../data/firestore_learning_repository.dart';
 import '../domain/learning_unit.dart';
 import '../domain/question.dart';
@@ -83,7 +84,7 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
     final selectedClass = ref.watch(selectedLearningClassProvider);
     final isDemoMode = ref.watch(isDemoModeProvider);
     final repo = ref.watch(learningRepositoryProvider);
-    final isLiveFirestore = repo is FirestoreLearningRepository;
+    final isLiveBackend = repo is FirestoreLearningRepository || repo is BackendLearningRepository;
 
     final classesAsync = ref.watch(drivingClassesProvider);
     final unitsAsync = ref.watch(learningUnitsProvider(selectedClass));
@@ -93,7 +94,7 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
 
     final effectiveView =
         _activeView ??
-        (isLiveFirestore
+        (isLiveBackend
             ? _LearningViewMode.questions
             : _LearningViewMode.topics);
 
@@ -120,7 +121,7 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Dev / Mock / Live Status Banner
-            _buildCatalogBanner(isDemoMode, isLiveFirestore),
+            _buildCatalogBanner(isDemoMode, isLiveBackend),
             const SizedBox(height: AppConstants.spacingMd),
 
             // Header and Question Search Box
@@ -283,8 +284,8 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
     );
   }
 
-  Widget _buildCatalogBanner(bool isDemoMode, bool isLiveFirestore) {
-    if (isLiveFirestore && !isDemoMode) {
+  Widget _buildCatalogBanner(bool isDemoMode, bool isLiveBackend) {
+    if (isLiveBackend && !isDemoMode) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
@@ -303,7 +304,7 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
             const SizedBox(width: 5),
             Flexible(
               child: Text(
-                'Live Austrian Catalogue · Cloud Firestore',
+                'Live Austrian Catalogue · Cloud Backend',
                 style: AppTextStyles.label.copyWith(
                   color: AppColors.success,
                   fontSize: 11,

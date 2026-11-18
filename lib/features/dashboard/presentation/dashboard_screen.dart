@@ -20,6 +20,7 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(currentUserProvider);
+    final isDemoMode = ref.watch(isDemoModeProvider);
     final progressAsync = ref.watch(learningProgressProvider);
 
     return Scaffold(
@@ -94,7 +95,6 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  /// Welcome card hosting personalized greeting and the 3 action shortcut cards.
   Widget _buildWelcomeCard(
     BuildContext context,
     WidgetRef ref,

@@ -16,6 +16,10 @@ class ApiConfig {
   /// Default port for the local Node.js backend
   static const int defaultPort = 5000;
 
+  /// Default production Vercel cloud backend endpoint
+  static const String liveBackendUrl =
+      'https://driving-school-app-backend.vercel.app';
+
   /// Compile-time environment override
   static const String _envBackendUrl = String.fromEnvironment('BACKEND_URL');
 
@@ -39,7 +43,7 @@ class ApiConfig {
     debugPrint('[ApiConfig] Active backend host set to: $_resolvedWorkingBaseUrl');
   }
 
-  /// List of candidate base URLs to attempt in development
+  /// List of candidate base URLs to attempt in development and production
   static List<String> get candidateUrls {
     if (_customBaseUrl != null && _customBaseUrl!.isNotEmpty) {
       return [_customBaseUrl!];
@@ -48,18 +52,25 @@ class ApiConfig {
       return [_envBackendUrl.replaceAll(RegExp(r'/+$'), '')];
     }
     if (kIsWeb) {
-      return ['http://127.0.0.1:$defaultPort'];
+      return [
+        liveBackendUrl,
+        'http://127.0.0.1:$defaultPort',
+      ];
     }
     try {
       if (Platform.isAndroid) {
         return [
-          'http://127.0.0.1:$defaultPort',   // 1. USB with adb reverse (fastest)
-          'http://10.10.26.95:$defaultPort',  // 2. Local Wi-Fi LAN
-          'http://10.0.2.2:$defaultPort',     // 3. Android Studio Emulator loopback
+          'http://127.0.0.1:$defaultPort',   // 1. USB with adb reverse (fastest for local dev)
+          liveBackendUrl,                    // 2. Live Vercel cloud backend (automatic cloud fallback)
+          'http://10.10.26.95:$defaultPort',  // 3. Local Wi-Fi LAN
+          'http://10.0.2.2:$defaultPort',     // 4. Android Studio Emulator loopback
         ];
       }
     } catch (_) {}
-    return ['http://127.0.0.1:$defaultPort'];
+    return [
+      'http://127.0.0.1:$defaultPort',
+      liveBackendUrl,
+    ];
   }
 
   /// The active base URL for backend API requests
