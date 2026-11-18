@@ -24,14 +24,25 @@ class LearningUnitCard extends StatelessWidget {
         // Category Header with book icon
         Row(
           children: [
-            const Text('📘', style: TextStyle(fontSize: 16)),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppColors.primarySubtle,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(
+                Icons.folder_outlined,
+                size: 14,
+                color: AppColors.primary,
+              ),
+            ),
             const SizedBox(width: AppConstants.spacingSm),
             Expanded(
               child: Text(
                 unit.categoryName,
                 style: AppTextStyles.h3.copyWith(
                   color: AppColors.primary,
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
                 maxLines: 1,
@@ -86,8 +97,8 @@ class LearningUnitCard extends StatelessWidget {
                   // Main card content with left padding to give room to the accent stripe
                   Padding(
                     padding: const EdgeInsets.only(
-                      left: AppConstants.spacingBase + 2,
-                      right: AppConstants.spacingBase,
+                      left: AppConstants.spacingBase,
+                      right: AppConstants.spacingSm + 4,
                       top: AppConstants.spacingBase,
                       bottom: AppConstants.spacingBase,
                     ),
@@ -109,12 +120,23 @@ class LearningUnitCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: AppConstants.spacingSm),
-                            Text(
-                              '${unit.examReadyCount} / ${unit.totalQuestions} Exam-ready',
-                              style: AppTextStyles.label.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textSecondary,
-                                fontSize: 11,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceVariant,
+                                borderRadius: BorderRadius.circular(AppConstants.radiusPill),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Text(
+                                '${unit.examReadyCount} / ${unit.totalQuestions} Exam-ready',
+                                style: AppTextStyles.label.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textSecondary,
+                                  fontSize: 10.5,
+                                ),
                               ),
                             ),
                           ],
@@ -152,17 +174,17 @@ class LearningUnitCard extends StatelessWidget {
   Widget _buildCountersAndPhaseRow(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 280;
+        final isCompact = constraints.maxWidth < 290;
 
         final counters = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildStatusCounter('🔄', unit.box0Count),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             _buildStatusCounter('👍', unit.box1Count),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             _buildStatusCounter('💪', unit.box2Count),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             _buildStatusCounter('✅', unit.box3Count),
           ],
         );
@@ -170,17 +192,21 @@ class LearningUnitCard extends StatelessWidget {
         final phase = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '${unit.readinessPercentage.toInt()}% · ${unit.phaseLabel} ',
-              style: AppTextStyles.label.copyWith(
-                color: unit.readinessPercentage > 0
-                    ? AppColors.primary
-                    : AppColors.error,
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
+            Flexible(
+              child: Text(
+                '${unit.readinessPercentage.toInt()}% · ${unit.phaseLabel} ',
+                style: AppTextStyles.label.copyWith(
+                  color: unit.readinessPercentage > 0
+                      ? AppColors.primary
+                      : AppColors.error,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 10.5,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            Text(unit.phaseIcon, style: const TextStyle(fontSize: 12)),
+            Text(unit.phaseIcon, style: const TextStyle(fontSize: 11)),
           ],
         );
 
@@ -195,6 +221,7 @@ class LearningUnitCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             counters,
+            const SizedBox(width: 4),
             Flexible(child: phase),
           ],
         );
@@ -203,20 +230,27 @@ class LearningUnitCard extends StatelessWidget {
   }
 
   Widget _buildStatusCounter(String emoji, int count) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 12)),
-        const SizedBox(width: 3),
-        Text(
-          '$count',
-          style: AppTextStyles.label.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-            fontSize: 11,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 10.5)),
+          const SizedBox(width: 2),
+          Text(
+            '$count',
+            style: AppTextStyles.label.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              fontSize: 10.5,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

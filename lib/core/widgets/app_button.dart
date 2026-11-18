@@ -42,7 +42,7 @@ class AppButton extends StatelessWidget {
       case AppButtonVariant.outline:
         backgroundColor = Colors.transparent;
         foregroundColor = AppColors.primary;
-        borderSide = const BorderSide(color: AppColors.primary, width: 1.5);
+        borderSide = const BorderSide(color: AppColors.border, width: 1.5);
         break;
       case AppButtonVariant.danger:
         backgroundColor = AppColors.logoutBackground;
@@ -75,7 +75,10 @@ class AppButton extends StatelessWidget {
           Flexible(
             child: Text(
               label,
-              style: AppTextStyles.button.copyWith(color: foregroundColor),
+              style: AppTextStyles.button.copyWith(
+                color: isEnabled ? foregroundColor : AppColors.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
             ),
@@ -84,32 +87,29 @@ class AppButton extends StatelessWidget {
       );
     }
 
-    final button = Material(
-      color: isEnabled ? backgroundColor : AppColors.surfaceVariant,
-      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-      child: InkWell(
-        onTap: isEnabled ? onPressed : null,
-        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.spacingBase,
-            vertical: 14,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-            border: borderSide != null && isEnabled
-                ? Border.fromBorderSide(borderSide)
-                : null,
-          ),
-          child: content,
-        ),
+    final buttonStyle = ElevatedButton.styleFrom(
+      backgroundColor: isEnabled ? backgroundColor : AppColors.borderSubtle,
+      foregroundColor: foregroundColor,
+      elevation: variant == AppButtonVariant.primary && isEnabled ? 1 : 0,
+      shadowColor: const Color.fromRGBO(37, 99, 235, 0.25),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.spacingLg,
+        vertical: 13,
       ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+        side: borderSide ?? BorderSide.none,
+      ),
+      minimumSize: const Size(0, AppConstants.minTouchTarget),
     );
 
-    if (isFullWidth) {
-      return SizedBox(width: double.infinity, child: button);
-    }
-
-    return button;
+    return SizedBox(
+      width: isFullWidth ? double.infinity : null,
+      child: ElevatedButton(
+        style: buttonStyle,
+        onPressed: isEnabled ? onPressed : null,
+        child: content,
+      ),
+    );
   }
 }

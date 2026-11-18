@@ -44,7 +44,16 @@ class _MainScaffoldShellState extends ConsumerState<MainScaffoldShell> {
           showDialog(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Text('Log out'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Row(
+                children: [
+                  Icon(Icons.logout_rounded, color: AppColors.logout, size: 22),
+                  SizedBox(width: 8),
+                  Text('Log out'),
+                ],
+              ),
               content: const Text(
                 'Are you sure you want to log out of your session?',
               ),
@@ -67,7 +76,10 @@ class _MainScaffoldShellState extends ConsumerState<MainScaffoldShell> {
                   },
                   child: const Text(
                     'Log out',
-                    style: TextStyle(color: AppColors.logout),
+                    style: TextStyle(
+                      color: AppColors.logout,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -78,30 +90,71 @@ class _MainScaffoldShellState extends ConsumerState<MainScaffoldShell> {
       body: widget.navigationShell,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
+          color: AppColors.surface,
           border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+          boxShadow: [
+            BoxShadow(
+              color: Color.fromRGBO(15, 23, 42, 0.05),
+              blurRadius: 10,
+              offset: Offset(0, -2),
+            ),
+          ],
         ),
         child: BottomNavigationBar(
           currentIndex: widget.navigationShell.currentIndex,
           onTap: _onItemTapped,
+          backgroundColor: AppColors.surface,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.textSecondary,
+          selectedFontSize: 12,
+          unselectedFontSize: 11,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard_rounded),
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 2),
+                child: Icon(Icons.dashboard_outlined, size: 22),
+              ),
+              activeIcon: Padding(
+                padding: EdgeInsets.only(bottom: 2),
+                child: Icon(Icons.dashboard_rounded, size: 22),
+              ),
               label: 'Dashboard',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.menu_book_outlined),
-              activeIcon: Icon(Icons.menu_book_rounded),
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 2),
+                child: Icon(Icons.menu_book_outlined, size: 22),
+              ),
+              activeIcon: Padding(
+                padding: EdgeInsets.only(bottom: 2),
+                child: Icon(Icons.menu_book_rounded, size: 22),
+              ),
               label: 'Learning',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.assignment_outlined),
-              activeIcon: Icon(Icons.assignment_turned_in_rounded),
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 2),
+                child: Icon(Icons.assignment_outlined, size: 22),
+              ),
+              activeIcon: Padding(
+                padding: EdgeInsets.only(bottom: 2),
+                child: Icon(Icons.assignment_turned_in_rounded, size: 22),
+              ),
               label: 'Pre-Check',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.trending_up_rounded),
-              activeIcon: Icon(Icons.trending_up_rounded),
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 2),
+                child: Icon(Icons.insights_rounded, size: 22),
+              ),
+              activeIcon: Padding(
+                padding: EdgeInsets.only(bottom: 2),
+                child: Icon(Icons.insights_rounded, size: 22),
+              ),
               label: 'Progress',
             ),
           ],

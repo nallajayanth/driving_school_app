@@ -14,20 +14,31 @@ class PowerdriveLogo extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Stylized car speed icon
+        // Stylized automotive gradient icon badge
         Container(
-          padding: const EdgeInsets.all(5),
+          padding: EdgeInsets.all(compact ? 4 : 8),
           decoration: BoxDecoration(
-            color: AppColors.primarySubtle,
-            borderRadius: BorderRadius.circular(8),
+            gradient: const LinearGradient(
+              colors: [AppColors.primaryDark, AppColors.primaryLight],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(compact ? 7 : 10),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(37, 99, 235, 0.25),
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
-          child: const Icon(
-            Icons.directions_car_rounded,
-            color: AppColors.primary,
-            size: 18,
+          child: Icon(
+            Icons.electric_car_rounded,
+            color: Colors.white,
+            size: compact ? 15 : 20,
           ),
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: compact ? 5 : 8),
         Expanded(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -37,21 +48,21 @@ class PowerdriveLogo extends StatelessWidget {
                 TextSpan(
                   children: [
                     TextSpan(
-                      text: 'FAHRSCHULE ',
+                      text: compact ? '' : 'FAHRSCHULE ',
                       style: TextStyle(
-                        fontSize: compact ? 8.5 : 10,
-                        fontWeight: FontWeight.w600,
+                        fontSize: compact ? 8 : 10,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: 1.0,
-                        color: AppColors.textSecondary,
+                        color: AppColors.primary,
                       ),
                     ),
                     TextSpan(
                       text: 'Powerdrive',
                       style: TextStyle(
-                        fontSize: compact ? 13 : 15,
+                        fontSize: compact ? 13 : 16,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
-                        letterSpacing: -0.2,
+                        letterSpacing: -0.3,
                       ),
                     ),
                   ],
@@ -60,15 +71,15 @@ class PowerdriveLogo extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               if (!compact)
-                Text(
-                  'www.powerdrive.at',
+                const Text(
+                  'Austrian Driver Training Platform',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.textMuted,
-                    letterSpacing: 0.5,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 0.2,
                   ),
                 ),
             ],

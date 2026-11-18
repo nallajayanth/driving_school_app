@@ -15,31 +15,52 @@ class TipBanner extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.spacingMd,
-        vertical: 10,
+        horizontal: AppConstants.spacingBase,
+        vertical: 12,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(AppConstants.radiusSm),
-        border: Border.all(color: AppColors.border, width: 0.8),
+        color: AppColors.warningSubtle,
+        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+        border: Border.all(color: AppColors.warningBorder, width: 1),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.lightbulb_outline_rounded,
-            size: 16,
-            color: AppColors.warning,
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.lightbulb_rounded,
+              size: 16,
+              color: AppColors.warning,
+            ),
           ),
-          const SizedBox(width: AppConstants.spacingSm),
+          const SizedBox(width: AppConstants.spacingMd),
           Expanded(
-            child: Text(
-              tipText,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-                height: 1.35,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'STUDY TIP',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: Color(0xFFB45309),
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  tipText,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: Color(0xFF92400E),
+                    fontSize: 12.5,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

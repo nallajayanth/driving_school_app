@@ -65,7 +65,7 @@ class DashboardScreen extends ConsumerWidget {
   /// Explicit development indicator clarifying that data is mock-driven.
   Widget _buildMockDataBanner() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: AppColors.primarySubtle,
         borderRadius: BorderRadius.circular(AppConstants.radiusPill),
@@ -76,15 +76,15 @@ class DashboardScreen extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.info_outline, size: 13, color: AppColors.primary),
-          const SizedBox(width: 5),
+          const Icon(Icons.verified_user_outlined, size: 13, color: AppColors.primary),
+          const SizedBox(width: 6),
           Flexible(
             child: Text(
               'Development Mode · Local Mock Data',
               style: AppTextStyles.label.copyWith(
                 color: AppColors.primaryDark,
                 fontSize: 11,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -94,7 +94,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  /// Welcome card hosting personalized greeting and the 3 blue shortcut buttons.
+  /// Welcome card hosting personalized greeting and the 3 action shortcut cards.
   Widget _buildWelcomeCard(
     BuildContext context,
     WidgetRef ref,
@@ -114,23 +114,61 @@ class DashboardScreen extends ConsumerWidget {
         children: [
           // Greeting Header
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text('👋', style: TextStyle(fontSize: 24)),
-              const SizedBox(width: AppConstants.spacingSm),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.primaryDark],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    userName.isNotEmpty ? userName[0].toUpperCase() : 'S',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppConstants.spacingMd),
               Expanded(
-                child: Text(
-                  'Welcome, $userName !',
-                  style: AppTextStyles.h1.copyWith(letterSpacing: -0.3),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome, $userName !',
+                      style: AppTextStyles.h1.copyWith(
+                        fontSize: 19,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Theory Candidate',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppConstants.spacingSm),
+          const SizedBox(height: AppConstants.spacingMd),
           Text(
             "It's great to have you here! Choose how you would like to continue:",
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
+              height: 1.4,
             ),
           ),
           const SizedBox(height: AppConstants.spacingLg),
@@ -149,20 +187,38 @@ class DashboardScreen extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.all(AppConstants.spacingMd),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySubtle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                   border: Border.all(
                     color: AppColors.primary.withValues(alpha: 0.35),
                   ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color.fromRGBO(37, 99, 235, 0.08),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.play_circle_fill_rounded,
-                      color: AppColors.primary,
-                      size: 28,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,10 +231,12 @@ class DashboardScreen extends ConsumerWidget {
                               fontSize: 13,
                             ),
                           ),
+                          const SizedBox(height: 2),
                           Text(
                             'Resume Question #${resumeState.lastQuestionNumber} (${resumeState.lastModuleCode})',
                             style: AppTextStyles.caption.copyWith(
                               color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -201,27 +259,33 @@ class DashboardScreen extends ConsumerWidget {
           // Shortcut 1: Practice exam questions
           DashboardActionButton(
             emoji: '🧠',
+            icon: Icons.psychology_outlined,
             label: 'Practice exam questions',
+            subtitle: 'Study Official GW & Class B theory modules',
             onTap: () {
               context.go('/learning');
             },
           ),
-          const SizedBox(height: AppConstants.spacingMd),
+          const SizedBox(height: AppConstants.spacingSm),
 
           // Shortcut 2: Start preliminary check
           DashboardActionButton(
             emoji: '📝',
+            icon: Icons.assignment_outlined,
             label: 'Start preliminary check',
+            subtitle: 'Timed mock examination with instant evaluation',
             onTap: () {
               context.go('/preliminary-check');
             },
           ),
-          const SizedBox(height: AppConstants.spacingMd),
+          const SizedBox(height: AppConstants.spacingSm),
 
           // Shortcut 3: Preliminary audit statistics
           DashboardActionButton(
             emoji: '📊',
+            icon: Icons.leaderboard_outlined,
             label: 'Preliminary audit statistics',
+            subtitle: 'Review past attempts, scores & readiness',
             onTap: () {
               context.push('/exam-history');
             },
@@ -245,12 +309,23 @@ class DashboardScreen extends ConsumerWidget {
           // Section Heading
           Row(
             children: [
-              const Text('📈', style: TextStyle(fontSize: 20)),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySubtle,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.trending_up_rounded,
+                  color: AppColors.primary,
+                  size: 18,
+                ),
+              ),
               const SizedBox(width: AppConstants.spacingSm),
               Expanded(
                 child: Text(
                   'Your learning progress',
-                  style: AppTextStyles.h2,
+                  style: AppTextStyles.h2.copyWith(fontSize: 17),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -288,7 +363,7 @@ class DashboardScreen extends ConsumerWidget {
                 title: 'Box 0',
                 questionCount: progress.box0QuestionsCount,
                 statusLabel: 'New or not correct 🔄',
-                indicatorColor: AppColors.success,
+                indicatorColor: AppColors.box0,
                 isActive: true,
                 onTap: () => context.go('/learning'),
               ),
@@ -332,7 +407,7 @@ class DashboardScreen extends ConsumerWidget {
                     title: 'Box 0',
                     questionCount: progress.box0QuestionsCount,
                     statusLabel: 'New or not correct 🔄',
-                    indicatorColor: AppColors.success,
+                    indicatorColor: AppColors.box0,
                     isActive: true,
                     onTap: () => context.go('/learning'),
                   ),

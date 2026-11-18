@@ -67,7 +67,7 @@ class _QuestionSearchBarState extends State<QuestionSearchBar> {
             fontSize: 13,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
 
         // Input field and Call button row
         Row(
@@ -75,7 +75,7 @@ class _QuestionSearchBarState extends State<QuestionSearchBar> {
           children: [
             Expanded(
               child: SizedBox(
-                height: 42,
+                height: 44,
                 child: TextField(
                   controller: _controller,
                   keyboardType: TextInputType.number,
@@ -85,9 +85,10 @@ class _QuestionSearchBarState extends State<QuestionSearchBar> {
                     hintText: 'e.g. 1278',
                     hintStyle: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.textMuted,
+                      fontSize: 13,
                     ),
                     prefixIcon: const Icon(
-                      Icons.search,
+                      Icons.search_rounded,
                       size: 18,
                       color: AppColors.textMuted,
                     ),
@@ -95,22 +96,18 @@ class _QuestionSearchBarState extends State<QuestionSearchBar> {
                       horizontal: 12,
                       vertical: 10,
                     ),
+                    filled: true,
+                    fillColor: AppColors.surfaceVariant,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.radiusSm,
-                      ),
+                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                       borderSide: const BorderSide(color: AppColors.border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.radiusSm,
-                      ),
+                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                       borderSide: const BorderSide(color: AppColors.border),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.radiusSm,
-                      ),
+                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                       borderSide: const BorderSide(
                         color: AppColors.primary,
                         width: 1.5,
@@ -122,21 +119,22 @@ class _QuestionSearchBarState extends State<QuestionSearchBar> {
             ),
             const SizedBox(width: AppConstants.spacingSm),
             SizedBox(
-              height: 42,
+              height: 44,
               child: ElevatedButton(
                 onPressed: widget.isLoading ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.textInverse,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+                    borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                   ),
                 ),
                 child: widget.isLoading
                     ? const SizedBox(
-                        width: 16,
-                        height: 16,
+                        height: 18,
+                        width: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: Colors.white,
@@ -145,7 +143,7 @@ class _QuestionSearchBarState extends State<QuestionSearchBar> {
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.search, size: 16),
+                          const Icon(Icons.arrow_forward_rounded, size: 16),
                           const SizedBox(width: 4),
                           Text(
                             'Call',
@@ -160,17 +158,28 @@ class _QuestionSearchBarState extends State<QuestionSearchBar> {
             ),
           ],
         ),
+
+        // Inline validation error message
         if (_errorMessage != null) ...[
           const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.only(left: 2),
-            child: Text(
-              _errorMessage!,
-              style: AppTextStyles.label.copyWith(
+          Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
                 color: AppColors.error,
-                fontSize: 11,
+                size: 14,
               ),
-            ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  _errorMessage!,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ],

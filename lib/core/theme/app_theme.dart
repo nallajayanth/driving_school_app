@@ -44,7 +44,7 @@ abstract class AppTheme {
         unselectedItemColor: AppColors.textSecondary,
         selectedLabelStyle: TextStyle(
           fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
         unselectedLabelStyle: TextStyle(
           fontSize: 11,
@@ -81,7 +81,7 @@ abstract class AppTheme {
         fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 12,
+          vertical: 14,
         ),
         hintStyle: AppTextStyles.bodyMedium.copyWith(
           color: AppColors.textMuted,
@@ -98,15 +98,6 @@ abstract class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-      ),
-      dividerTheme: const DividerThemeData(
-        color: AppColors.divider,
-        thickness: 1,
-        space: 1,
       ),
     );
   }

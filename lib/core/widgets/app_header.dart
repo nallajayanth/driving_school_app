@@ -27,26 +27,34 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
+        boxShadow: [
+          BoxShadow(
+            color: Color.fromRGBO(15, 23, 42, 0.03),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.spacingMd,
+            horizontal: 8,
             vertical: 6,
           ),
           child: Row(
             children: [
               // Flexible Brand Logo
               const Expanded(child: PowerdriveLogo(compact: true)),
-              const SizedBox(width: AppConstants.spacingSm),
-              // Language Selector Dropdown
+              const SizedBox(width: 4),
+
+              // Language Selector Dropdown Pill
               Container(
                 height: 32,
-                padding: const EdgeInsets.symmetric(horizontal: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(AppConstants.radiusPill),
                   border: Border.all(color: AppColors.border),
                 ),
                 child: DropdownButtonHideUnderline(
@@ -54,18 +62,24 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                     value: selectedLanguage,
                     isDense: true,
                     icon: const Icon(
-                      Icons.arrow_drop_down,
-                      size: 16,
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 14,
                       color: AppColors.textSecondary,
                     ),
                     style: AppTextStyles.label.copyWith(
                       color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 10.5,
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'DE', child: Text('DE DE')),
-                      DropdownMenuItem(value: 'EN', child: Text('EN EN')),
+                      DropdownMenuItem(
+                        value: 'DE',
+                        child: Text('DE DE'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'EN',
+                        child: Text('EN EN'),
+                      ),
                     ],
                     onChanged: (val) {
                       if (val != null && onLanguageChanged != null) {
@@ -75,11 +89,12 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
-              // Logout Button
+              const SizedBox(width: 4),
+
+              // Logout Button Pill
               Material(
                 color: AppColors.logoutBackground,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppConstants.radiusPill),
                 child: InkWell(
                   onTap:
                       onLogout ??
@@ -88,26 +103,30 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                           const SnackBar(content: Text('Log out triggered')),
                         );
                       },
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusPill),
                   child: Container(
                     height: 32,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 7),
                     alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppConstants.radiusPill),
+                      border: Border.all(color: const Color(0xFFFECACA), width: 1),
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
                           Icons.logout_rounded,
-                          size: 14,
+                          size: 13,
                           color: AppColors.logout,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 3),
                         Text(
                           'Log out',
                           style: AppTextStyles.label.copyWith(
                             color: AppColors.logout,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 10.5,
                           ),
                         ),
                       ],

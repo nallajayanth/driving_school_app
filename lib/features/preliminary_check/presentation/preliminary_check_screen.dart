@@ -65,35 +65,38 @@ class PreliminaryCheckScreen extends ConsumerWidget {
                 children: [
                   // Development/Mock badge
                   Container(
+                    constraints: const BoxConstraints(maxWidth: 260),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppConstants.spacingSm,
-                      vertical: 4,
+                      horizontal: 10,
+                      vertical: 5,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.primarySubtle,
                       borderRadius: BorderRadius.circular(
-                        AppConstants.radiusSm,
+                        AppConstants.radiusPill,
                       ),
                       border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.2),
+                        color: AppColors.primary.withValues(alpha: 0.25),
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
-                          Icons.info_outline,
+                          Icons.speed_rounded,
                           size: 14,
                           color: AppColors.primary,
                         ),
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
-                            'DEVELOPMENT PREVIEW · PRELIMINARY CHECK',
+                            'DEVELOPMENT PREVIEW',
                             style: AppTextStyles.caption.copyWith(
-                              color: AppColors.primary,
+                              color: AppColors.primaryDark,
                               fontWeight: FontWeight.w700,
+                              letterSpacing: 0.4,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -102,12 +105,16 @@ class PreliminaryCheckScreen extends ConsumerWidget {
                   const SizedBox(height: AppConstants.spacingBase),
 
                   // Title and instructions
-                  Text('Start preliminary check', style: AppTextStyles.h1),
-                  const SizedBox(height: AppConstants.spacingXs),
+                  Text(
+                    'Start preliminary check',
+                    style: AppTextStyles.h1.copyWith(fontSize: 22),
+                  ),
+                  const SizedBox(height: 6),
                   Text(
                     'Choose one or more examination classes to begin your preliminary driving theory test.',
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
+                      height: 1.4,
                     ),
                   ),
                   const SizedBox(height: AppConstants.spacingLg),
@@ -133,11 +140,11 @@ class PreliminaryCheckScreen extends ConsumerWidget {
                     );
                   }),
 
-                  const SizedBox(height: AppConstants.spacingBase),
+                  const SizedBox(height: AppConstants.spacingMd),
 
                   // Total questions calculation card
                   AppCard(
-                    backgroundColor: AppColors.surfaceVariant,
+                    backgroundColor: AppColors.surface,
                     borderColor: AppColors.border,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,9 +152,9 @@ class PreliminaryCheckScreen extends ConsumerWidget {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: AppColors.surface,
+                                color: AppColors.primarySubtle,
                                 borderRadius: BorderRadius.circular(
                                   AppConstants.radiusMd,
                                 ),
@@ -158,7 +165,7 @@ class PreliminaryCheckScreen extends ConsumerWidget {
                                 size: 22,
                               ),
                             ),
-                            const SizedBox(width: AppConstants.spacingSm),
+                            const SizedBox(width: AppConstants.spacingMd),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,6 +175,7 @@ class PreliminaryCheckScreen extends ConsumerWidget {
                                     style: AppTextStyles.bodyLarge.copyWith(
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.textPrimary,
+                                      fontSize: 14,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
@@ -176,7 +184,8 @@ class PreliminaryCheckScreen extends ConsumerWidget {
                                         ? 'Select at least one class above'
                                         : 'Selected: ${selectionState.selectedClassCodes.join(", ")}',
                                     style: AppTextStyles.caption.copyWith(
-                                      color: AppColors.textSecondary,
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],
@@ -184,14 +193,15 @@ class PreliminaryCheckScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: AppConstants.spacingSm),
-                        const Divider(height: 1),
+                        const SizedBox(height: AppConstants.spacingMd),
+                        const Divider(height: 1, color: AppColors.divider),
                         const SizedBox(height: AppConstants.spacingSm),
                         Text(
                           'Note: The combined GW + B examination rule requires backend confirmation. Total is computed from current repository configuration.',
                           style: AppTextStyles.caption.copyWith(
                             color: AppColors.textMuted,
                             fontStyle: FontStyle.italic,
+                            fontSize: 11,
                           ),
                         ),
                       ],
@@ -235,7 +245,7 @@ class PreliminaryCheckScreen extends ConsumerWidget {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    final iconEmoji = dClass.code == 'GW' ? '🧠' : '🚗';
+    final isGw = dClass.code == 'GW';
 
     return AppCard(
       margin: const EdgeInsets.only(bottom: AppConstants.spacingSm),
@@ -244,16 +254,27 @@ class PreliminaryCheckScreen extends ConsumerWidget {
       backgroundColor: isSelected ? AppColors.primarySubtle : AppColors.surface,
       child: Row(
         children: [
-          // Emoji badge
+          // Styled Icon badge
           Container(
             width: 44,
             height: 44,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.surface : AppColors.surfaceVariant,
+              gradient: isSelected
+                  ? const LinearGradient(
+                      colors: [AppColors.primary, AppColors.primaryDark],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
+              color: isSelected ? null : AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(AppConstants.radiusMd),
             ),
-            child: Text(iconEmoji, style: const TextStyle(fontSize: 22)),
+            child: Icon(
+              isGw ? Icons.psychology_rounded : Icons.directions_car_rounded,
+              size: 22,
+              color: isSelected ? Colors.white : AppColors.primary,
+            ),
           ),
           const SizedBox(width: AppConstants.spacingBase),
 
@@ -268,6 +289,8 @@ class PreliminaryCheckScreen extends ConsumerWidget {
                     color: isSelected
                         ? AppColors.primaryDark
                         : AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 if (dClass.description != null) ...[
@@ -276,6 +299,7 @@ class PreliminaryCheckScreen extends ConsumerWidget {
                     dClass.description!,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textSecondary,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -283,12 +307,12 @@ class PreliminaryCheckScreen extends ConsumerWidget {
             ),
           ),
 
-          // Checkbox / Radio indicator
+          // Checkbox indicator
           Container(
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(6),
               color: isSelected ? AppColors.primary : Colors.transparent,
               border: Border.all(
                 color: isSelected ? AppColors.primary : AppColors.textMuted,

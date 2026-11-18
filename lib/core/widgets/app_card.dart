@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 import '../theme/app_colors.dart';
 
-/// Reusable card component for Powerdrive screens.
-/// Features a crisp white background, subtle border, rounded corners, and optional click interaction.
+/// Reusable modern card component for Powerdrive screens.
+/// Features a crisp white background, subtle refined border, rounded corners, and smooth click ripple.
 class AppCard extends StatelessWidget {
   const AppCard({
     super.key,
@@ -14,6 +14,8 @@ class AppCard extends StatelessWidget {
     this.borderColor,
     this.backgroundColor = AppColors.surface,
     this.borderRadius = AppConstants.radiusLg,
+    this.gradient,
+    this.elevation = 0,
   });
 
   final Widget child;
@@ -23,20 +25,26 @@ class AppCard extends StatelessWidget {
   final Color? borderColor;
   final Color backgroundColor;
   final double borderRadius;
+  final Gradient? gradient;
+  final double elevation;
 
   @override
   Widget build(BuildContext context) {
     Widget card = Container(
       margin: margin,
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: gradient == null ? backgroundColor : null,
+        gradient: gradient,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: borderColor ?? AppColors.border, width: 1),
-        boxShadow: const [
+        border: Border.all(
+          color: borderColor ?? AppColors.border,
+          width: 1,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color.fromRGBO(15, 23, 42, 0.04),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+            color: const Color.fromRGBO(15, 23, 42, 0.04),
+            blurRadius: elevation > 0 ? 12 : 6,
+            offset: Offset(0, elevation > 0 ? 4 : 2),
           ),
         ],
       ),
