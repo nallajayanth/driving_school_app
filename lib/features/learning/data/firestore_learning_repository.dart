@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../domain/driving_class.dart';
 import '../domain/learning_unit.dart';
 import '../domain/question.dart';
+import '../domain/question_check_result.dart';
 import 'firestore_query_strategy.dart';
 import 'learning_repository.dart';
 import 'question_mapper.dart';
@@ -266,6 +267,18 @@ class FirestoreLearningRepository implements LearningRepository {
               u.categoryName.toLowerCase().contains(trimmed),
         )
         .toList();
+  }
+
+  @override
+  Future<QuestionCheckResult> checkQuestionAnswer({
+    required String questionId,
+    required List<String> selectedOptionIds,
+  }) async {
+    // In production, answer keys are protected on the backend API.
+    // Client-side Firestore direct access does not expose answer keys.
+    throw UnsupportedError(
+      'Evaluating answer correctness requires backend API verification via BackendLearningRepository.',
+    );
   }
 
   /// Clears in-memory caches.

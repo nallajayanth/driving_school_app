@@ -1,13 +1,17 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/network/api_client.dart';
 import '../../authentication/presentation/auth_providers.dart';
+import '../../progress/presentation/progress_providers.dart';
+import '../data/backend_learning_repository.dart';
 import '../data/firestore_learning_repository.dart';
 import '../data/learning_repository.dart';
 import '../data/mock_learning_repository.dart';
 import '../domain/driving_class.dart';
 import '../domain/learning_unit.dart';
 import '../domain/question.dart';
-import '../../progress/presentation/progress_providers.dart';
+import '../domain/question_check_result.dart';
 
 /// Provider exposing the mock learning repository instance.
 final mockLearningRepositoryProvider = Provider<MockLearningRepository>((ref) {
@@ -20,15 +24,22 @@ final firestoreLearningRepositoryProvider =
       return FirestoreLearningRepository();
     });
 
+/// Provider exposing the Node.js backend learning repository instance.
+final backendLearningRepositoryProvider =
+    Provider<BackendLearningRepository>((ref) {
+      final client = ref.watch(apiClientProvider);
+      return BackendLearningRepository(apiClient: client);
+    });
+
 /// Provider exposing the active [LearningRepository] implementation.
 ///
 /// SELECTION POLICY:
 /// - Offline demo mode enabled (`isDemoModeProvider == true`): returns [MockLearningRepository].
-/// - Authenticated / Live environment (Firebase initialized): returns [FirestoreLearningRepository].
+/// - Authenticated / Live environment (Firebase initialized): returns [BackendLearningRepository].
 /// - Uninitialized test environment: returns [MockLearningRepository].
 ///
 /// IMPORTANT:
-/// When an authenticated Firestore request fails, this provider DOES NOT silently
+/// When an authenticated backend request fails, this provider DOES NOT silently
 /// fall back to mock data. Errors are propagated to the UI to present a clear
 /// retry dialog.
 final learningRepositoryProvider = Provider<LearningRepository>((ref) {
@@ -39,7 +50,7 @@ final learningRepositoryProvider = Provider<LearningRepository>((ref) {
 
   try {
     if (Firebase.apps.isNotEmpty) {
-      return ref.watch(firestoreLearningRepositoryProvider);
+      return ref.watch(backendLearningRepositoryProvider);
     }
   } catch (_) {
     // Firebase uninitialized in test runner environment
@@ -207,3 +218,76 @@ final questionSelectedOptionsProvider = Provider.family<Set<String>, String>((
   final all = ref.watch(questionStudySelectionProvider);
   return all[questionId] ?? const <String>{};
 });
+
+/// Notifier managing asynchronous answer checking results across questions in Learn mode.
+class QuestionCheckResultsNotifier
+    extends Notifier<Map<String, AsyncValue<QuestionCheckResult?>>> {
+  @override
+  Map<String, AsyncValue<QuestionCheckResult?>> build() => {};
+
+  Future<void> checkAnswer({
+    required String questionId,
+    required List<String> selectedOptionIds,
+    String moduleCode = 'GW',
+    String? topic,
+    int? questionNumber,
+  }) async {
+    state = {
+      ...state,
+      questionId: const AsyncValue.loading(),
+    };
+    try {
+      final repo = ref.read(learningRepositoryProvider);
+      final result = await repo.checkQuestionAnswer(
+        questionId: questionId,
+        selectedOptionIds: selectedOptionIds,
+      );
+      state = {
+        ...state,
+        questionId: AsyncValue.data(result),
+      };
+
+      if (result.isCorrect) {
+        ref
+            .read(learningProgressRepositoryProvider)
+            .markQuestionReviewed(
+              questionId: questionId,
+              moduleCode: moduleCode,
+              reviewed: true,
+              topic: topic,
+              questionNumber: questionNumber,
+            );
+      }
+    } catch (e, st) {
+      state = {
+        ...state,
+        questionId: AsyncValue.error(e, st),
+      };
+    }
+  }
+
+  void reset(String questionId) {
+    if (!state.containsKey(questionId)) return;
+    final copy = Map<String, AsyncValue<QuestionCheckResult?>>.from(state);
+    copy.remove(questionId);
+    state = copy;
+  }
+}
+
+final questionCheckResultsProvider = NotifierProvider<
+  QuestionCheckResultsNotifier,
+  Map<String, AsyncValue<QuestionCheckResult?>>
+>(() {
+  return QuestionCheckResultsNotifier();
+});
+
+/// Family provider exposing the verification result for a specific question.
+final questionCheckProvider =
+    Provider.family<AsyncValue<QuestionCheckResult?>, String>((
+      ref,
+      questionId,
+    ) {
+      final all = ref.watch(questionCheckResultsProvider);
+      return all[questionId] ?? const AsyncValue.data(null);
+    });
+

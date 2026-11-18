@@ -1,15 +1,51 @@
+import 'dart:math';
+
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/network/api_client.dart';
+import '../../authentication/presentation/auth_providers.dart';
 import '../../learning/domain/driving_class.dart';
 import '../../learning/domain/question.dart';
+import '../../learning/presentation/learning_providers.dart';
+import '../data/backend_exam_repository.dart';
 import '../data/exam_repository.dart';
 import '../data/mock_exam_repository.dart';
 import '../domain/exam_attempt.dart';
 import '../domain/mock_assessment_service.dart';
 
-/// Provider exposing the active [ExamRepository] implementation.
-/// Defaults to [MockExamRepository] during UI prototyping.
-final examRepositoryProvider = Provider<ExamRepository>((ref) {
+/// Provider exposing the mock exam repository instance.
+final mockExamRepositoryProvider = Provider<MockExamRepository>((ref) {
   return MockExamRepository();
+});
+
+/// Provider exposing the backend exam repository instance.
+final backendExamRepositoryProvider = Provider<BackendExamRepository>((ref) {
+  final client = ref.watch(apiClientProvider);
+  final learningRepo = ref.watch(backendLearningRepositoryProvider);
+  return BackendExamRepository(
+    apiClient: client,
+    learningRepository: learningRepo,
+  );
+});
+
+/// Provider exposing the active [ExamRepository] implementation.
+/// Defaults to [MockExamRepository] during demo mode or uninitialized environments.
+final examRepositoryProvider = Provider<ExamRepository>((ref) {
+  final isDemoMode = ref.watch(isDemoModeProvider);
+  if (isDemoMode) {
+    return ref.watch(mockExamRepositoryProvider);
+  }
+
+  try {
+    if (Firebase.apps.isNotEmpty) {
+      return ref.watch(backendExamRepositoryProvider);
+    }
+  } catch (_) {
+    // Firebase uninitialized in test runner environment
+  }
+
+  return ref.watch(mockExamRepositoryProvider);
 });
 
 /// FutureProvider querying eligible classes for the preliminary check.
@@ -104,7 +140,7 @@ final preliminarySelectionProvider =
       },
     );
 
-/// State of an active mock examination session.
+/// State of an active examination session.
 class ExamSessionState {
   const ExamSessionState({
     this.questions = const [],
@@ -113,6 +149,7 @@ class ExamSessionState {
     this.selectedClasses = const [],
     this.isLoading = false,
     this.isSubmitting = false,
+    this.activeSubmissionId,
     this.completedAttempt,
     this.errorMessage,
   });
@@ -126,11 +163,15 @@ class ExamSessionState {
   final List<String> selectedClasses;
   final bool isLoading;
   final bool isSubmitting;
+
+  /// Unique idempotent submission identifier generated once per logical exam submission.
+  /// Preserved across retries to prevent duplicate server attempts.
+  final String? activeSubmissionId;
+
   final ExamAttempt? completedAttempt;
   final String? errorMessage;
 
   /// Backward-compatible view returning a `Map<String, String>` of selected answers.
-  /// For single-select or questions with selected options, returns the first selected option ID.
   Map<String, String> get selectedAnswers => selectedOptionSets.map(
     (k, v) => MapEntry(k, v.isNotEmpty ? v.first : ''),
   );
@@ -166,6 +207,7 @@ class ExamSessionState {
     List<String>? selectedClasses,
     bool? isLoading,
     bool? isSubmitting,
+    String? activeSubmissionId,
     ExamAttempt? completedAttempt,
     String? errorMessage,
   }) {
@@ -181,22 +223,27 @@ class ExamSessionState {
       selectedClasses: selectedClasses ?? this.selectedClasses,
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
+      activeSubmissionId: activeSubmissionId ?? this.activeSubmissionId,
       completedAttempt: completedAttempt ?? this.completedAttempt,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }
 
-/// Notifier managing active mock examination session flow.
+/// Notifier managing active examination session flow.
 class ExamSessionNotifier extends Notifier<ExamSessionState> {
   @override
   ExamSessionState build() {
     return const ExamSessionState();
   }
 
-  /// Initializes a new mock examination session with the chosen driving classes.
+  /// Initializes a new examination session with the chosen driving classes.
   Future<void> startSession(List<String> selectedClasses) async {
-    state = ExamSessionState(isLoading: true, selectedClasses: selectedClasses);
+    state = ExamSessionState(
+      isLoading: true,
+      selectedClasses: selectedClasses,
+      activeSubmissionId: null,
+    );
 
     try {
       final repo = ref.read(examRepositoryProvider);
@@ -210,6 +257,7 @@ class ExamSessionNotifier extends Notifier<ExamSessionState> {
         selectedOptionSets: const {},
         selectedClasses: selectedClasses,
         isLoading: false,
+        activeSubmissionId: null,
       );
     } catch (e) {
       state = state.copyWith(
@@ -220,10 +268,6 @@ class ExamSessionNotifier extends Notifier<ExamSessionState> {
   }
 
   /// Toggles an option selection for a question according to its [QuestionSelectionMode].
-  ///
-  /// - [QuestionSelectionMode.multiple]: toggles the option (adds if unselected, removes if already selected).
-  /// - [QuestionSelectionMode.single]: replaces with new option, or deselects if tapped again.
-  /// - [QuestionSelectionMode.unknown]: defaults to single replacement for legacy mock questions.
   void toggleOption(
     String questionId,
     String optionId, [
@@ -294,22 +338,111 @@ class ExamSessionNotifier extends Notifier<ExamSessionState> {
     }
   }
 
-  /// Submits the mock examination, calculates scores, and saves to repository history.
+  /// Submits the examination, calculates scores, and saves to repository history.
+  ///
+  /// Guarantees:
+  /// - Repeated taps during active submission return immediately without creating duplicate attempts.
+  /// - A single unique submissionId is generated per exam attempt and reused across retries.
+  /// - Logged-out users are prevented from submitting live exams.
   Future<ExamAttempt?> submitExam() async {
+    // Prevent concurrent repeated button taps or submitting empty exams
     if (state.isSubmitting || state.questions.isEmpty) return null;
+    if (state.isFinished) return state.completedAttempt;
 
-    state = state.copyWith(isSubmitting: true);
+    final repo = ref.read(examRepositoryProvider);
+
+    // Authentication Guard: ensure student is signed in for live backend submissions
+    if (repo is BackendExamRepository) {
+      final currentUser = ref.read(currentUserProvider).value;
+      if (currentUser == null) {
+        state = state.copyWith(
+          isSubmitting: false,
+          errorMessage: 'You must be signed in to submit an examination.',
+        );
+        return null;
+      }
+    }
+
+    // Reuse existing submissionId if retrying, or generate a fresh unique one
+    final submissionId = state.activeSubmissionId ?? _generateSubmissionId();
+
+    state = state.copyWith(
+      isSubmitting: true,
+      activeSubmissionId: submissionId,
+      errorMessage: null,
+    );
 
     try {
-      final assessmentService = ref.read(mockAssessmentServiceProvider);
-      final attempt = assessmentService.evaluateMockExam(
-        questions: state.questions,
-        selectedAnswers: state.selectedOptionSets,
-        selectedClasses: state.selectedClasses,
-      );
+      ExamAttempt attempt;
 
-      final repo = ref.read(examRepositoryProvider);
-      await repo.saveExamAttempt(attempt);
+      if (repo is BackendExamRepository) {
+        // Authenticated live mode: submit to backend evaluation engine
+        final primaryModule = state.selectedClasses.isNotEmpty
+            ? state.selectedClasses.first
+            : 'GW';
+
+        if (state.selectedClasses.length <= 1) {
+          attempt = await repo.submitExamAnswers(
+            moduleCode: primaryModule,
+            answers: state.selectedOptionSets,
+            submissionId: submissionId,
+          );
+        } else {
+          // Multi-module session: submit for each module with module-specific suffix
+          int totalQuestions = 0;
+          int totalScored = 0;
+          bool allPassed = true;
+
+          for (final code in state.selectedClasses) {
+            final moduleQuestions = state.questions
+                .where((q) => q.drivingClassId.toUpperCase() == code.toUpperCase())
+                .map((q) => q.id)
+                .toSet();
+
+            final moduleAnswers = <String, Set<String>>{};
+            for (final entry in state.selectedOptionSets.entries) {
+              if (moduleQuestions.contains(entry.key)) {
+                moduleAnswers[entry.key] = entry.value;
+              }
+            }
+
+            if (moduleAnswers.isNotEmpty) {
+              final moduleAttempt = await repo.submitExamAnswers(
+                moduleCode: code,
+                answers: moduleAnswers,
+                submissionId: '${submissionId}_$code',
+              );
+              totalQuestions += moduleAttempt.totalQuestions;
+              totalScored += moduleAttempt.pointsScored;
+              if (!moduleAttempt.isPassed) allPassed = false;
+            }
+          }
+
+          final pct = totalQuestions > 0
+              ? (totalScored / totalQuestions) * 100.0
+              : 0.0;
+
+          attempt = ExamAttempt(
+            id: submissionId,
+            dateTime: DateTime.now(),
+            selectedClasses: state.selectedClasses,
+            totalQuestions: totalQuestions,
+            pointsScored: totalScored,
+            scorePercentage: pct,
+            isPassed: allPassed,
+            statusLabel: allPassed ? 'Passed' : 'Failed',
+          );
+        }
+      } else {
+        // Demo mode or test runner mock assessment
+        final assessmentService = ref.read(mockAssessmentServiceProvider);
+        attempt = assessmentService.evaluateMockExam(
+          questions: state.questions,
+          selectedAnswers: state.selectedOptionSets,
+          selectedClasses: state.selectedClasses,
+        );
+        await repo.saveExamAttempt(attempt);
+      }
 
       // Invalidate history providers to refresh audit records
       ref.invalidate(examHistoryProvider);
@@ -330,6 +463,12 @@ class ExamSessionNotifier extends Notifier<ExamSessionState> {
   /// Resets the current exam session.
   void resetSession() {
     state = const ExamSessionState();
+  }
+
+  String _generateSubmissionId() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final randomPart = Random().nextInt(999999).toString().padLeft(6, '0');
+    return 'sub_${timestamp}_$randomPart';
   }
 }
 

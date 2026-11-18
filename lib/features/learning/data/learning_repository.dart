@@ -1,6 +1,7 @@
 import '../domain/driving_class.dart';
 import '../domain/learning_unit.dart';
 import '../domain/question.dart';
+import '../domain/question_check_result.dart';
 
 /// Abstract contract for retrieving learning curriculum, units, and questions.
 /// Production implementation will connect to the verified backend API.
@@ -27,4 +28,10 @@ abstract class LearningRepository {
 
   /// Searches learning units by title or category query string.
   Future<List<LearningUnit>> searchLearningUnits(String query);
+
+  /// Checks the student's selected options for a question in Learn mode.
+  Future<QuestionCheckResult> checkQuestionAnswer({
+    required String questionId,
+    required List<String> selectedOptionIds,
+  });
 }

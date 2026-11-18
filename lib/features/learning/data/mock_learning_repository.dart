@@ -1,6 +1,7 @@
 import '../domain/driving_class.dart';
 import '../domain/learning_unit.dart';
 import '../domain/question.dart';
+import '../domain/question_check_result.dart';
 import 'learning_repository.dart';
 
 /// Explicitly labeled mock implementation of [LearningRepository] for development and UI prototyping.
@@ -230,5 +231,28 @@ class MockLearningRepository implements LearningRepository {
               u.categoryName.toLowerCase().contains(trimmed),
         )
         .toList();
+  }
+
+  @override
+  Future<QuestionCheckResult> checkQuestionAnswer({
+    required String questionId,
+    required List<String> selectedOptionIds,
+  }) async {
+    final actualCorrect = questionId == 'q_1278'
+        ? ['opt_2']
+        : (questionId == 'q_1001'
+            ? ['opt_a']
+            : (questionId == 'q_2001' ? ['opt_b1'] : ['opt_1']));
+
+    final isCorrect =
+        selectedOptionIds.length == actualCorrect.length &&
+        selectedOptionIds.every(actualCorrect.contains);
+
+    return QuestionCheckResult(
+      questionId: questionId,
+      isCorrect: isCorrect,
+      correctOptionIds: actualCorrect,
+      explanation: 'Verified solution according to official curriculum.',
+    );
   }
 }

@@ -83,6 +83,21 @@ class _ExamSessionScreenState extends ConsumerState<ExamSessionScreen> {
 
       if (attempt != null && context.mounted) {
         context.go('/exam-result', extra: attempt);
+      } else if (context.mounted) {
+        final err = ref.read(examSessionProvider).errorMessage ??
+            'Submission failed. Please check your connection and try again.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(err),
+            backgroundColor: AppColors.logout,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: AppColors.textInverse,
+              onPressed: () =>
+                  _showFinishConfirmationDialog(context, ref.read(examSessionProvider)),
+            ),
+          ),
+        );
       }
     }
   }

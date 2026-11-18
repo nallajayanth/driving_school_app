@@ -192,6 +192,13 @@ class _QuestionDetailScreenState extends ConsumerState<QuestionDetailScreen> {
     final isMultiple = question.selectionMode == QuestionSelectionMode.multiple;
     final isUnknown = question.selectionMode == QuestionSelectionMode.unknown;
 
+    // Check Answer state
+    final checkAsync = ref.watch(questionCheckProvider(question.id));
+    final checkResult = checkAsync.asData?.value;
+    final isChecked = checkResult != null;
+    final isExamCorrect = checkResult?.isCorrect == true;
+    final correctOptionIds = checkResult?.correctOptionIds ?? const <String>[];
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -229,6 +236,9 @@ class _QuestionDetailScreenState extends ConsumerState<QuestionDetailScreen> {
           if (selectedOptions.isNotEmpty)
             TextButton(
               onPressed: () {
+                ref
+                    .read(questionCheckResultsProvider.notifier)
+                    .reset(question.id);
                 ref
                     .read(questionStudySelectionProvider.notifier)
                     .clearQuestion(
@@ -560,12 +570,41 @@ class _QuestionDetailScreenState extends ConsumerState<QuestionDetailScreen> {
             // Interactive Answer Options
             ...question.options.map((option) {
               final isSelected = selectedOptions.contains(option.id);
+              final isCorrectOption =
+                  isChecked && correctOptionIds.contains(option.id);
+              final isIncorrectSelection =
+                  isChecked && isSelected && !isCorrectOption;
+
+              // Color determination
+              Color borderColor = isSelected ? AppColors.primary : AppColors.border;
+              Color backgroundColor = isSelected
+                  ? AppColors.primarySubtle
+                  : AppColors.surface;
+
+              if (isChecked) {
+                if (isCorrectOption) {
+                  borderColor = AppColors.success;
+                  backgroundColor = AppColors.box3Background;
+                } else if (isIncorrectSelection) {
+                  borderColor = AppColors.error;
+                  backgroundColor = AppColors.logoutBackground;
+                } else {
+                  borderColor = AppColors.border.withValues(alpha: 0.6);
+                  backgroundColor = AppColors.surface;
+                }
+              }
 
               return AppCard(
                 margin: const EdgeInsets.only(bottom: AppConstants.spacingSm),
                 onTap: isUnknown
                     ? null
                     : () {
+                        // Reset verification if user changes selection
+                        if (isChecked) {
+                          ref
+                              .read(questionCheckResultsProvider.notifier)
+                              .reset(question.id);
+                        }
                         ref
                             .read(questionStudySelectionProvider.notifier)
                             .toggleOption(
@@ -577,10 +616,8 @@ class _QuestionDetailScreenState extends ConsumerState<QuestionDetailScreen> {
                               questionNumber: question.questionNumber,
                             );
                       },
-                borderColor: isSelected ? AppColors.primary : AppColors.border,
-                backgroundColor: isSelected
-                    ? AppColors.primarySubtle
-                    : AppColors.surface,
+                borderColor: borderColor,
+                backgroundColor: backgroundColor,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -596,36 +633,116 @@ class _QuestionDetailScreenState extends ConsumerState<QuestionDetailScreen> {
                         borderRadius: isMultiple
                             ? BorderRadius.circular(4)
                             : null,
-                        color: isSelected
-                            ? AppColors.primary
-                            : Colors.transparent,
+                        color: isChecked
+                            ? (isCorrectOption
+                                  ? AppColors.success
+                                  : (isIncorrectSelection
+                                        ? AppColors.error
+                                        : Colors.transparent))
+                            : (isSelected
+                                  ? AppColors.primary
+                                  : Colors.transparent),
                         border: Border.all(
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.textMuted,
+                          color: isChecked
+                              ? (isCorrectOption
+                                    ? AppColors.success
+                                    : (isIncorrectSelection
+                                          ? AppColors.error
+                                          : AppColors.textMuted))
+                              : (isSelected
+                                    ? AppColors.primary
+                                    : AppColors.textMuted),
                           width: 2,
                         ),
                       ),
-                      child: isSelected
-                          ? Icon(
-                              isMultiple ? Icons.check : Icons.circle,
-                              size: isMultiple ? 14 : 10,
-                              color: AppColors.textInverse,
-                            )
-                          : null,
+                      child: isChecked
+                          ? (isCorrectOption
+                                ? const Icon(
+                                    Icons.check,
+                                    size: 14,
+                                    color: Colors.white,
+                                  )
+                                : (isIncorrectSelection
+                                      ? const Icon(
+                                          Icons.close,
+                                          size: 14,
+                                          color: Colors.white,
+                                        )
+                                      : null))
+                          : (isSelected
+                                ? Icon(
+                                    isMultiple ? Icons.check : Icons.circle,
+                                    size: isMultiple ? 14 : 10,
+                                    color: AppColors.textInverse,
+                                  )
+                                : null),
                     ),
                     const SizedBox(width: AppConstants.spacingMd),
                     Expanded(
-                      child: Text(
-                        option.text,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: isSelected
-                              ? AppColors.primaryDark
-                              : AppColors.textPrimary,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            option.text,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: isChecked
+                                  ? (isCorrectOption
+                                        ? AppColors.textPrimary
+                                        : (isIncorrectSelection
+                                              ? AppColors.error
+                                              : AppColors.textSecondary))
+                                  : (isSelected
+                                        ? AppColors.primaryDark
+                                        : AppColors.textPrimary),
+                              fontWeight: isSelected || isCorrectOption
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                          if (isCorrectOption) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 13,
+                                  color: AppColors.success,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Correct answer',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.success,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ] else if (isIncorrectSelection) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.cancel_rounded,
+                                  size: 13,
+                                  color: AppColors.error,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Your selection (incorrect)',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.error,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ],
@@ -633,30 +750,227 @@ class _QuestionDetailScreenState extends ConsumerState<QuestionDetailScreen> {
               );
             }),
 
-            if (selectedOptions.isNotEmpty) ...[
+            // Error display if validation failed
+            if (checkAsync.hasError) ...[
               const SizedBox(height: AppConstants.spacingSm),
-              Align(
-                alignment: Alignment.centerRight,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    ref
-                        .read(questionStudySelectionProvider.notifier)
-                        .clearQuestion(
-                          question.id,
-                          moduleCode: question.drivingClassId,
-                          topic: question.topic,
-                          questionNumber: question.questionNumber,
-                        );
-                  },
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('Reset selections'),
+              Container(
+                padding: const EdgeInsets.all(AppConstants.spacingBase),
+                decoration: BoxDecoration(
+                  color: AppColors.logoutBackground,
+                  borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.5),
+                  ),
                 ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: AppColors.error,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Could not verify answer. Please check backend connection.',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        ref
+                            .read(questionCheckResultsProvider.notifier)
+                            .checkAnswer(
+                              questionId: question.id,
+                              selectedOptionIds: selectedOptions.toList(),
+                              moduleCode: question.drivingClassId,
+                              topic: question.topic,
+                              questionNumber: question.questionNumber,
+                            );
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // Verification Result Feedback Banner
+            if (isChecked) ...[
+              const SizedBox(height: AppConstants.spacingBase),
+              Container(
+                padding: const EdgeInsets.all(AppConstants.spacingBase),
+                decoration: BoxDecoration(
+                  color: isExamCorrect
+                      ? AppColors.box3Background
+                      : AppColors.logoutBackground,
+                  borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                  border: Border.all(
+                    color: isExamCorrect ? AppColors.success : AppColors.error,
+                    width: 1.5,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          isExamCorrect
+                              ? Icons.check_circle_rounded
+                              : Icons.cancel_rounded,
+                          color: isExamCorrect
+                              ? AppColors.success
+                              : AppColors.error,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            isExamCorrect
+                                ? 'Correct! Well done.'
+                                : 'Incorrect answer',
+                            style: AppTextStyles.h3.copyWith(
+                              color: isExamCorrect
+                                  ? AppColors.success
+                                  : AppColors.error,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (checkResult.explanation != null &&
+                        checkResult.explanation!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        checkResult.explanation!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textPrimary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ] else if (!isExamCorrect) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        isMultiple
+                            ? 'Review the green highlighted options. In Austria, all correct options must be selected with no incorrect choices.'
+                            : 'Review the correct option highlighted in green above.',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppConstants.spacingBase),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        ref
+                            .read(questionCheckResultsProvider.notifier)
+                            .reset(question.id);
+                      },
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text('Try Again'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              // Check Answer Action Controls
+              const SizedBox(height: AppConstants.spacingBase),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: selectedOptions.isEmpty ||
+                              checkAsync.isLoading ||
+                              isUnknown
+                          ? null
+                          : () {
+                              ref
+                                  .read(
+                                    questionCheckResultsProvider.notifier,
+                                  )
+                                  .checkAnswer(
+                                    questionId: question.id,
+                                    selectedOptionIds: selectedOptions.toList(),
+                                    moduleCode: question.drivingClassId,
+                                    topic: question.topic,
+                                    questionNumber: question.questionNumber,
+                                  );
+                            },
+                      icon: checkAsync.isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.fact_check_outlined, size: 20),
+                      label: Text(
+                        checkAsync.isLoading ? 'Checking...' : 'Check Answer',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.radiusMd,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (selectedOptions.isNotEmpty && !checkAsync.isLoading) ...[
+                    const SizedBox(width: AppConstants.spacingSm),
+                    OutlinedButton(
+                      onPressed: () {
+                        ref
+                            .read(questionCheckResultsProvider.notifier)
+                            .reset(question.id);
+                        ref
+                            .read(questionStudySelectionProvider.notifier)
+                            .clearQuestion(
+                              question.id,
+                              moduleCode: question.drivingClassId,
+                              topic: question.topic,
+                              questionNumber: question.questionNumber,
+                            );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.radiusMd,
+                          ),
+                        ),
+                      ),
+                      child: const Text('Reset selections'),
+                    ),
+                  ],
+                ],
               ),
             ],
 
             const SizedBox(height: AppConstants.spacingBase),
 
-            // Practice Mode Notice
+            // Study Information Notice
             Container(
               padding: const EdgeInsets.all(AppConstants.spacingBase),
               decoration: BoxDecoration(
@@ -675,7 +989,7 @@ class _QuestionDetailScreenState extends ConsumerState<QuestionDetailScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Notice: Question answering, answer selection, and interactive practice are enabled. Answer submission, immediate feedback, and scoring rules are preserved pending Phase 12 Cloud Functions verification.',
+                      'Notice: Question answering, answer selection, and interactive practice are enabled. Answer verification checks options against the official answer keys, and your study progress is saved automatically.',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                         height: 1.35,
