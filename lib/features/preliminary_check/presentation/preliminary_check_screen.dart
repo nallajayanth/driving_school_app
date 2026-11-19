@@ -82,15 +82,24 @@ class PreliminaryCheckScreen extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.speed_rounded,
-                          size: 14,
-                          color: AppColors.primary,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.asset(
+                            'assets/images/app_logo.png',
+                            width: 16,
+                            height: 16,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const Icon(
+                              Icons.speed_rounded,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
-                            'DEVELOPMENT PREVIEW',
+                            'OFFICIAL POWERDRIVE EXAM',
                             style: AppTextStyles.caption.copyWith(
                               color: AppColors.primaryDark,
                               fontWeight: FontWeight.w700,

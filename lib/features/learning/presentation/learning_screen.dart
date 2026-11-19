@@ -132,7 +132,16 @@ class _LearningScreenState extends ConsumerState<LearningScreen> {
                 children: [
                   Row(
                     children: [
-                      const Text('📘', style: TextStyle(fontSize: 20)),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.asset(
+                          'assets/images/app_logo.png',
+                          width: 22,
+                          height: 22,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const Text('📘', style: TextStyle(fontSize: 20)),
+                        ),
+                      ),
                       const SizedBox(width: AppConstants.spacingSm),
                       Expanded(
                         child: Text(

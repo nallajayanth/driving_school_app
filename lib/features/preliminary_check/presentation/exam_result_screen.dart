@@ -52,18 +52,35 @@ class ExamResultScreen extends ConsumerWidget {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.12),
+                    color: Colors.white,
                     shape: BoxShape.circle,
-                    border: Border.all(color: statusColor, width: 2),
+                    border: Border.all(color: statusColor, width: 2.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: statusColor.withValues(alpha: 0.25),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  child: Center(
-                    child: Icon(
-                      isPass
-                          ? Icons.emoji_events_rounded
-                          : Icons.assignment_turned_in_rounded,
-                      size: 44,
-                      color: statusColor,
-                    ),
+                  child: ClipOval(
+                    child: isPass
+                        ? Image.asset(
+                            'assets/images/app_logo.png',
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.emoji_events_rounded,
+                              size: 44,
+                              color: statusColor,
+                            ),
+                          )
+                        : Icon(
+                            Icons.assignment_turned_in_rounded,
+                            size: 44,
+                            color: statusColor,
+                          ),
                   ),
                 ),
                 const SizedBox(height: AppConstants.spacingBase),

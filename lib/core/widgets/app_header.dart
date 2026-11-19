@@ -21,6 +21,107 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(56.0);
 
+  void _showAboutAppDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color.fromRGBO(16, 185, 129, 0.25),
+                    blurRadius: 18,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Image.asset(
+                  'assets/images/app_logo.png',
+                  width: 72,
+                  height: 72,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 72,
+                    height: 72,
+                    color: AppColors.primary,
+                    child: const Icon(Icons.school_rounded, color: Colors.white, size: 36),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Powerdrive Learning',
+              style: AppTextStyles.h2.copyWith(fontSize: 18),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Official Austrian Driver Training Platform',
+              style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Syllabus', style: AppTextStyles.caption),
+                      Text(
+                        'Austria GW & B',
+                        style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Cloud Engine', style: AppTextStyles.caption),
+                      Text(
+                        'Vercel + Firestore',
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.success,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -44,8 +145,14 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
           ),
           child: Row(
             children: [
-              // Flexible Brand Logo
-              const Expanded(child: PowerdriveLogo(compact: true)),
+              // Flexible Brand Logo with About info tap
+              Expanded(
+                child: InkWell(
+                  onTap: () => _showAboutAppDialog(context),
+                  borderRadius: BorderRadius.circular(8),
+                  child: const PowerdriveLogo(compact: true),
+                ),
+              ),
               const SizedBox(width: 4),
 
               // Language Selector Dropdown Pill

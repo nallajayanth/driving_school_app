@@ -7,6 +7,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../authentication/presentation/auth_providers.dart';
+import '../../learning/data/backend_learning_repository.dart';
+import '../../learning/data/firestore_learning_repository.dart';
+import '../../learning/presentation/learning_providers.dart';
 import '../../progress/domain/learning_progress.dart';
 import '../../progress/presentation/progress_providers.dart';
 import 'widgets/dashboard_action_button.dart';
@@ -21,6 +24,12 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(currentUserProvider);
     final progressAsync = ref.watch(learningProgressProvider);
+    final isDemoMode = ref.watch(isDemoModeProvider);
+    final learningRepo = ref.watch(learningRepositoryProvider);
+    final isLiveBackend =
+        (learningRepo is BackendLearningRepository ||
+            learningRepo is FirestoreLearningRepository) &&
+        !isDemoMode;
 
     return Scaffold(
       body: RefreshIndicator(
@@ -38,7 +47,7 @@ class DashboardScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Dev / Mock Data Notice Badge
-              _buildMockDataBanner(),
+              _buildStatusBanner(isLiveBackend),
               const SizedBox(height: AppConstants.spacingMd),
 
               // Welcome Card with Quick Actions
@@ -62,8 +71,43 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  /// Explicit development indicator clarifying that data is mock-driven.
-  Widget _buildMockDataBanner() {
+    /// Environment indicator clarifying whether data is live cloud-connected or local mock.
+  Widget _buildStatusBanner(bool isLive) {
+    if (isLive) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.box3Background,
+          borderRadius: BorderRadius.circular(AppConstants.radiusPill),
+          border: Border.all(
+            color: AppColors.success.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_done_rounded,
+              size: 13,
+              color: AppColors.success,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                'Live Austrian Platform · Cloud Connected',
+                style: AppTextStyles.label.copyWith(
+                  color: AppColors.success,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
