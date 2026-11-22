@@ -16,6 +16,22 @@ service cloud.firestore {
     }
 
     // =========================================================================
+    // 0. APPLICATION CONFIGURATION & DYNAMIC ENDPOINTS
+    // =========================================================================
+
+    // Public read so the mobile app can fetch the backend baseUrl before or after login.
+    // Client writes are strictly forbidden (only Firebase Console / Admin SDK).
+    match /app_config/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /api_config/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // =========================================================================
     // 1. PUBLIC QUESTION CATALOGUE
     // =========================================================================
 
@@ -48,11 +64,10 @@ service cloud.firestore {
     // =========================================================================
 
     match /users/{userId} {
-      // User Profile Document: Owner-only read access
+      // User Profile: Owner-only read access
       allow read: if isOwner(userId);
 
-      // Profile modifications: Strictly limited to application profile fields.
-      // Rejects arbitrary or privileged fields (e.g. role, isAdmin, permissions).
+      // Profile modifications: Name, email, language preference
       allow create, update: if isOwner(userId)
         && request.resource.data.keys().hasOnly([
           'id', 'name', 'email', 'preferredLanguage', 'createdAt', 'updatedAt'
@@ -67,10 +82,8 @@ service cloud.firestore {
 
       allow delete: if false;
 
-      // -----------------------------------------------------------------------
-      // 4a. Student Question Learning Progress (Phase 12 Feature A)
+      // 4a. Student Question Learning Progress
       // Path: users/{userId}/question_progress/{questionId}
-      // -----------------------------------------------------------------------
       match /question_progress/{questionId} {
         allow read, delete: if isOwner(userId);
 
@@ -87,10 +100,8 @@ service cloud.firestore {
           && (resource == null || !('firstViewedAt' in resource.data) || request.resource.data.firstViewedAt == resource.data.firstViewedAt);
       }
 
-      // -----------------------------------------------------------------------
-      // 4b. Student Question Bookmarks (Phase 12 Feature B)
+      // 4b. Student Question Bookmarks
       // Path: users/{userId}/bookmarks/{questionId}
-      // -----------------------------------------------------------------------
       match /bookmarks/{questionId} {
         allow read, delete: if isOwner(userId);
 
@@ -103,10 +114,8 @@ service cloud.firestore {
           && request.resource.data.moduleCode in ['GW', 'B'];
       }
 
-      // -----------------------------------------------------------------------
-      // 4c. Active Learning Checkpoint State (Phase 12 Feature D)
+      // 4c. Active Learning Checkpoint State
       // Path: users/{userId}/learning_state/{docId}
-      // -----------------------------------------------------------------------
       match /learning_state/{docId} {
         allow read, delete: if isOwner(userId);
 
