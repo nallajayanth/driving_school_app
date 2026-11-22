@@ -12,7 +12,6 @@ void main() {
 
       // Verify brand header elements
       expect(find.textContaining('Powerdrive'), findsOneWidget);
-      expect(find.text('DE DE'), findsOneWidget);
       expect(find.text('Log out'), findsOneWidget);
 
       // Verify bottom navigation destinations
@@ -52,17 +51,17 @@ void main() {
       // 4 Leitner Status Cards
       expect(find.text('Box 0'), findsOneWidget);
       expect(find.text('1426'), findsOneWidget);
-      expect(find.text('New or not correct 🔄'), findsOneWidget);
+      expect(find.text('New or not correct'), findsOneWidget);
 
       expect(find.text('Subject 1'), findsOneWidget);
       expect(find.text('2'), findsWidgets);
-      expect(find.text('1x correct 👍'), findsOneWidget);
+      expect(find.text('1x correct'), findsOneWidget);
 
       expect(find.text('Subject 2'), findsOneWidget);
-      expect(find.text('Correct twice in a row 💪'), findsOneWidget);
+      expect(find.text('Correct twice in a row'), findsOneWidget);
 
       expect(find.text('Subject 3'), findsOneWidget);
-      expect(find.text('Ready for the exam ✅'), findsOneWidget);
+      expect(find.text('Ready for the exam'), findsOneWidget);
 
       // Tip Banner
       expect(

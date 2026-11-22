@@ -9,12 +9,12 @@ import 'powerdrive_logo.dart';
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   const AppHeader({
     super.key,
-    this.selectedLanguage = 'DE',
+    this.selectedLanguage,
     this.onLanguageChanged,
     this.onLogout,
   });
 
-  final String selectedLanguage;
+  final String? selectedLanguage;
   final ValueChanged<String>? onLanguageChanged;
   final VoidCallback? onLogout;
 
@@ -28,10 +28,20 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+        contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 24),
+            SizedBox(width: 10),
+            Text('About Powerdrive'),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
@@ -40,7 +50,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                 boxShadow: const [
                   BoxShadow(
                     color: Color.fromRGBO(16, 185, 129, 0.25),
-                    blurRadius: 18,
+                    blurRadius: 16,
                     offset: Offset(0, 4),
                   ),
                 ],
@@ -75,7 +85,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
             ),
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(10),
@@ -140,8 +150,8 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 6,
+            horizontal: 14,
+            vertical: 8,
           ),
           child: Row(
             children: [
@@ -153,50 +163,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   child: const PowerdriveLogo(compact: true),
                 ),
               ),
-              const SizedBox(width: 4),
-
-              // Language Selector Dropdown Pill
-              Container(
-                height: 32,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(AppConstants.radiusPill),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selectedLanguage,
-                    isDense: true,
-                    icon: const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      size: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                    style: AppTextStyles.label.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 10.5,
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'DE',
-                        child: Text('DE DE'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'EN',
-                        child: Text('EN EN'),
-                      ),
-                    ],
-                    onChanged: (val) {
-                      if (val != null && onLanguageChanged != null) {
-                        onLanguageChanged!(val);
-                      }
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 8),
 
               // Logout Button Pill
               Material(
@@ -213,7 +180,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   borderRadius: BorderRadius.circular(AppConstants.radiusPill),
                   child: Container(
                     height: 32,
-                    padding: const EdgeInsets.symmetric(horizontal: 7),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(AppConstants.radiusPill),
@@ -224,16 +191,16 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                       children: [
                         const Icon(
                           Icons.logout_rounded,
-                          size: 13,
+                          size: 14,
                           color: AppColors.logout,
                         ),
-                        const SizedBox(width: 3),
+                        const SizedBox(width: 4),
                         Text(
                           'Log out',
                           style: AppTextStyles.label.copyWith(
                             color: AppColors.logout,
                             fontWeight: FontWeight.w700,
-                            fontSize: 10.5,
+                            fontSize: 11,
                           ),
                         ),
                       ],

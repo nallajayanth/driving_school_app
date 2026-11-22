@@ -16,8 +16,6 @@ class MainScaffoldShell extends ConsumerStatefulWidget {
 }
 
 class _MainScaffoldShellState extends ConsumerState<MainScaffoldShell> {
-  String _currentLanguage = 'DE';
-
   void _onItemTapped(int index) {
     widget.navigationShell.goBranch(
       index,
@@ -27,19 +25,8 @@ class _MainScaffoldShellState extends ConsumerState<MainScaffoldShell> {
 
   @override
   Widget build(BuildContext context) {
-    final userAsync = ref.watch(currentUserProvider);
-    final activeLanguage =
-        userAsync.asData?.value?.preferredLanguage ?? _currentLanguage;
-
     return Scaffold(
       appBar: AppHeader(
-        selectedLanguage: activeLanguage,
-        onLanguageChanged: (lang) {
-          setState(() {
-            _currentLanguage = lang;
-          });
-          ref.read(currentUserProvider.notifier).changeLanguage(lang);
-        },
         onLogout: () {
           showDialog(
             context: context,
@@ -67,11 +54,7 @@ class _MainScaffoldShellState extends ConsumerState<MainScaffoldShell> {
                     Navigator.of(ctx).pop();
                     await ref.read(currentUserProvider.notifier).logout();
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Logged out of session (Mock)'),
-                        ),
-                      );
+                      context.go('/login');
                     }
                   },
                   child: const Text(

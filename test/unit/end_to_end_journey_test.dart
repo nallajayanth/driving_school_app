@@ -136,11 +136,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Welcome, Krishan Patel !'), findsOneWidget);
 
-        // 6. Header Language Switch & Logout Dialog
-        await tester.tap(find.text('DE DE'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('EN EN').last);
-        await tester.pumpAndSettle();
+        // 6. Header Logout Dialog
 
         // Trigger Logout Dialog
         await tester.tap(find.text('Log out'));
