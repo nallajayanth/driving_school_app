@@ -405,7 +405,7 @@ class DashboardScreen extends ConsumerWidget {
               StatusCard(
                 title: 'Box 0',
                 questionCount: progress.box0QuestionsCount,
-                statusLabel: 'New or not correct 🔄',
+                statusLabel: 'New or not correct',
                 indicatorColor: AppColors.box0,
                 isActive: true,
                 onTap: () => context.go('/learning'),
@@ -414,7 +414,7 @@ class DashboardScreen extends ConsumerWidget {
               StatusCard(
                 title: 'Subject 1',
                 questionCount: progress.subject1QuestionsCount,
-                statusLabel: '1x correct 👍',
+                statusLabel: '1x correct',
                 indicatorColor: AppColors.box1,
                 isActive: progress.subject1QuestionsCount > 0,
                 onTap: () => context.go('/learning'),
@@ -423,7 +423,7 @@ class DashboardScreen extends ConsumerWidget {
               StatusCard(
                 title: 'Subject 2',
                 questionCount: progress.subject2QuestionsCount,
-                statusLabel: 'Correct twice in a row 💪',
+                statusLabel: 'Correct twice in a row',
                 indicatorColor: AppColors.box2,
                 isActive: progress.subject2QuestionsCount > 0,
                 onTap: () => context.go('/learning'),
@@ -432,7 +432,7 @@ class DashboardScreen extends ConsumerWidget {
               StatusCard(
                 title: 'Subject 3',
                 questionCount: progress.subject3QuestionsCount,
-                statusLabel: 'Ready for the exam ✅',
+                statusLabel: 'Ready for the exam',
                 indicatorColor: AppColors.box3,
                 isActive: progress.subject3QuestionsCount > 0,
                 onTap: () => context.go('/learning'),
@@ -449,7 +449,7 @@ class DashboardScreen extends ConsumerWidget {
                   child: StatusCard(
                     title: 'Box 0',
                     questionCount: progress.box0QuestionsCount,
-                    statusLabel: 'New or not correct 🔄',
+                    statusLabel: 'New or not correct',
                     indicatorColor: AppColors.box0,
                     isActive: true,
                     onTap: () => context.go('/learning'),
@@ -460,7 +460,7 @@ class DashboardScreen extends ConsumerWidget {
                   child: StatusCard(
                     title: 'Subject 1',
                     questionCount: progress.subject1QuestionsCount,
-                    statusLabel: '1x correct 👍',
+                    statusLabel: '1x correct',
                     indicatorColor: AppColors.box1,
                     isActive: progress.subject1QuestionsCount > 0,
                     onTap: () => context.go('/learning'),
@@ -475,7 +475,7 @@ class DashboardScreen extends ConsumerWidget {
                   child: StatusCard(
                     title: 'Subject 2',
                     questionCount: progress.subject2QuestionsCount,
-                    statusLabel: 'Correct twice in a row 💪',
+                    statusLabel: 'Correct twice in a row',
                     indicatorColor: AppColors.box2,
                     isActive: progress.subject2QuestionsCount > 0,
                     onTap: () => context.go('/learning'),
@@ -486,7 +486,7 @@ class DashboardScreen extends ConsumerWidget {
                   child: StatusCard(
                     title: 'Subject 3',
                     questionCount: progress.subject3QuestionsCount,
-                    statusLabel: 'Ready for the exam ✅',
+                    statusLabel: 'Ready for the exam',
                     indicatorColor: AppColors.box3,
                     isActive: progress.subject3QuestionsCount > 0,
                     onTap: () => context.go('/learning'),
