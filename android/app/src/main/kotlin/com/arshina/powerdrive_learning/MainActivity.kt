@@ -1,4 +1,4 @@
-package com.example.driving_school_mobile_app
+package com.arshina.powerdrive_learning
 
 import io.flutter.embedding.android.FlutterActivity
 

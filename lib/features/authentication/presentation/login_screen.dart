@@ -436,54 +436,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ],
                           ),
                   ),
-                  const SizedBox(height: AppConstants.spacingBase),
-
-                  // Offline Demo Mode Button
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.radiusMd,
-                      ),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    padding: const EdgeInsets.all(AppConstants.spacingSm),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.science_outlined,
-                          size: 20,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: AppConstants.spacingSm),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Offline Demo Mode',
-                                style: AppTextStyles.label.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              Text(
-                                'Explore all features with local mock data',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _handleDemoMode,
-                          child: const Text('Enter Demo'),
-                        ),
-                      ],
-                    ),
-                  ),
                   const SizedBox(height: AppConstants.spacingLg),
 
                   // Register Link

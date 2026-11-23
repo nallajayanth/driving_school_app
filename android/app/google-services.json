@@ -7,12 +7,88 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:1096787298947:android:1088641198652289bde9b6",
+        "android_client_info": {
+          "package_name": "com.arshina.powerdrive_learning"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1096787298947-3c6ke2l169op6cvqmp424u88avdeqp04.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.arshina.powerdrive_learning",
+            "certificate_hash": "18a3a90e8ee32d6e58952f3399cd1b6bda7b2bc1"
+          }
+        },
+        {
+          "client_id": "1096787298947-5r7s3b1t5sgn876ikm13tjl201goinhv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.arshina.powerdrive_learning",
+            "certificate_hash": "24b1b23e526a6400ffda3b95c4b3cc6dd670e635"
+          }
+        },
+        {
+          "client_id": "1096787298947-ohpai2u0vsrijpc19nqvrvko7q4jc31l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.arshina.powerdrive_learning",
+            "certificate_hash": "f88077cdcdd31bf9d2d830999a54f1fbaec7f58f"
+          }
+        },
+        {
+          "client_id": "1096787298947-o84vriapv2soord5o0u9q4121a6aj8c2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWi0VaR8pYa56Lh0GDezGgx3bn5HE3Lk0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1096787298947-o84vriapv2soord5o0u9q4121a6aj8c2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1096787298947-pmad9gbo8bgqopbdu2q4rin6l0po68fe.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.drivingSchoolMobileApp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:1096787298947:android:1de7875c225eb68fbde9b6",
         "android_client_info": {
           "package_name": "com.example.driving_school_mobile_app"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "1096787298947-bncilsd1q2d0bvqihi9s1v29rci6e27j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.driving_school_mobile_app",
+            "certificate_hash": "24b1b23e526a6400ffda3b95c4b3cc6dd670e635"
+          }
+        },
+        {
+          "client_id": "1096787298947-fcg64qt4n9d231vbn235tdaao1b7vhon.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.driving_school_mobile_app",
+            "certificate_hash": "18a3a90e8ee32d6e58952f3399cd1b6bda7b2bc1"
+          }
+        },
         {
           "client_id": "1096787298947-ir5003clj7tu5ajavosj4mmpu86dg7qu.apps.googleusercontent.com",
           "client_type": 1,

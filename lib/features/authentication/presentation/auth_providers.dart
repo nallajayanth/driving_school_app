@@ -188,6 +188,9 @@ class AuthNotifier extends AsyncNotifier<User?> {
       return null;
     });
   }
+
+  /// Alias for [logout] supporting standard Firebase naming conventions.
+  Future<void> signOut() => logout();
 }
 
 /// Provider exposing the current user session.

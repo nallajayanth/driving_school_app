@@ -57,7 +57,7 @@ class GoogleSignInCancelledFailure extends AuthFailure {
 class GoogleSignInConfigFailure extends AuthFailure {
   const GoogleSignInConfigFailure([
     super.message =
-        'Google sign-in is not yet configured for this device (missing SHA-1 fingerprint in Firebase Console). Please use Email & Password or Demo Mode.',
+        'Google sign-in is temporarily unavailable. Please sign in with your email & password or try again.',
   ]);
 }
 

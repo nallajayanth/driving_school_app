@@ -121,7 +121,7 @@ void main() {
     });
 
     testWidgets(
-      'Demo Mode button signs in as mock learner and navigates to Dashboard',
+      'Signing in with valid credentials navigates to Dashboard',
       (WidgetTester tester) async {
         // Pump the entire PowerdriveApp with an initially unauthenticated repository
         final unauthRepo = MockAuthRepository.unauthenticated();
@@ -136,10 +136,20 @@ void main() {
 
         // App redirects to /login because unauthenticated
         expect(find.text('Welcome back'), findsOneWidget);
-        expect(find.text('Enter Demo'), findsOneWidget);
+        expect(find.text('Sign In'), findsOneWidget);
 
-        // Tap Enter Demo
-        await tester.tap(find.text('Enter Demo'));
+        // Enter credentials and tap Sign In
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'name@example.com'),
+          'krishan.patel@powerdrive.at',
+        );
+        await tester.enterText(
+          find.byWidgetPredicate(
+            (w) => w is TextFormField && w.obscureText == true,
+          ),
+          'password123',
+        );
+        await tester.tap(find.text('Sign In'));
         await tester.pumpAndSettle();
 
         // Verifies navigation to Dashboard
